@@ -32,8 +32,13 @@ repositories {
 
 dependencies {
     api "io.projectreactor:reactor-core:3.7.5"
+    api "net.java.dev.jna:jna:5.16.0"
+    api "org.opensearch:opensearch-agent-bootstrap:${opensearch_version}"
+    api "org.opensearch:opensearch-agent-policy:${opensearch_version}"
     api "org.opensearch:opensearch-cli:${opensearch_version}"
     api "org.opensearch:opensearch-core:${opensearch_version}"
+    compileOnly "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
+    testRuntimeOnly "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
     api "org.opensearch:opensearch-telemetry:${opensearch_version}"
     api "org.opensearch:opensearch-x-content:${opensearch_version}"
     api "org.reactivestreams:reactive-streams:1.0.4"
