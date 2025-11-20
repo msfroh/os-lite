@@ -15,7 +15,7 @@
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -30,26 +30,12 @@
  * GitHub history for details.
  */
 
-package org.opensearch.common.lifecycle;
-
-import org.opensearch.common.annotation.PublicApi;
-import org.opensearch.common.lease.Releasable;
-
-/**
- * Base interface for a lifecycle component.
- *
- * @opensearch.api
+/*
+ * Limited security policy for scripts.
+ * This is what is needed for basic functionality to work.
  */
-@PublicApi(since = "1.0.0")
-public interface LifecycleComponent extends Releasable {
-
-    Lifecycle.State lifecycleState();
-
-    void addLifecycleListener(LifecycleListener listener);
-
-    void removeLifecycleListener(LifecycleListener listener);
-
-    void start();
-
-    void stop();
-}
+grant {
+  // needed IndyInterface selectMethod (setCallSiteTarget)
+  // TODO: clean this up / only give it to engines that really must have it
+  permission java.lang.RuntimePermission "getClassLoader";
+};

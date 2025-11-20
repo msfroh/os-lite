@@ -78,6 +78,9 @@ public class SettingsModule implements Module {
         Set<SettingUpgrader<?>> settingUpgraders
     ) {
         this.settings = settings;
+        for (Setting<?> setting : ClusterSettings.BUILT_IN_CLUSTER_SETTINGS) {
+            registerSetting(setting);
+        }
 
         for (Setting<?> setting : additionalSettings) {
             registerSetting(setting);

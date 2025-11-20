@@ -635,6 +635,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
         }
 
         @Override
+        public boolean detailedErrorStackTraceEnabled() {
+            return delegate.detailedErrorStackTraceEnabled();
+        }
+
+        @Override
         public void sendResponse(RestResponse response) {
             close();
             delegate.sendResponse(response);
@@ -695,6 +700,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
         @Override
         public boolean detailedErrorsEnabled() {
             return delegate.detailedErrorsEnabled();
+        }
+
+        @Override
+        public boolean detailedErrorStackTraceEnabled() {
+            return delegate.detailedErrorStackTraceEnabled();
         }
 
         @Override

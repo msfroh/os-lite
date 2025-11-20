@@ -32,11 +32,25 @@
 package org.opensearch.common.settings;
 
 import org.apache.logging.log4j.LogManager;
+import org.opensearch.cluster.ClusterName;
 import org.opensearch.common.annotation.PublicApi;
+import org.opensearch.common.breaker.BreakerSettings;
+import org.opensearch.common.breaker.HierarchyCircuitBreakerService;
 import org.opensearch.common.logging.Loggers;
+import org.opensearch.common.network.NetworkModule;
 import org.opensearch.common.settings.Setting.Property;
+import org.opensearch.core.common.breaker.CircuitBreaker;
+import org.opensearch.core.indices.breaker.CircuitBreakerService;
+import org.opensearch.env.Environment;
+import org.opensearch.http.HttpTransportSettings;
+import org.opensearch.tasks.TaskManager;
+import org.opensearch.tasks.TaskResourceTrackingService;
+import org.opensearch.threadpool.ThreadPool;
+import org.opensearch.transport.TransportSettings;
 
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -47,6 +61,38 @@ import java.util.function.Predicate;
  */
 @PublicApi(since = "1.0.0")
 public final class ClusterSettings extends AbstractScopedSettings {
+
+    public static Set<Setting<?>> BUILT_IN_CLUSTER_SETTINGS = Collections.unmodifiableSet(
+            new HashSet<>(
+                    Arrays.asList(
+                            BreakerSettings.CIRCUIT_BREAKER_LIMIT_SETTING,
+                            BreakerSettings.CIRCUIT_BREAKER_OVERHEAD_SETTING,
+                            ClusterName.CLUSTER_NAME_SETTING,
+                            Environment.PATH_HOME_SETTING,
+                            Environment.PATH_LOGS_SETTING,
+                            HierarchyCircuitBreakerService.USE_REAL_MEMORY_USAGE_SETTING,
+                            HierarchyCircuitBreakerService.TOTAL_CIRCUIT_BREAKER_LIMIT_SETTING,
+                            HierarchyCircuitBreakerService.FIELDDATA_CIRCUIT_BREAKER_LIMIT_SETTING,
+                            HierarchyCircuitBreakerService.FIELDDATA_CIRCUIT_BREAKER_OVERHEAD_SETTING,
+                            HierarchyCircuitBreakerService.IN_FLIGHT_REQUESTS_CIRCUIT_BREAKER_LIMIT_SETTING,
+                            HierarchyCircuitBreakerService.IN_FLIGHT_REQUESTS_CIRCUIT_BREAKER_OVERHEAD_SETTING,
+                            HierarchyCircuitBreakerService.REQUEST_CIRCUIT_BREAKER_LIMIT_SETTING,
+                            HierarchyCircuitBreakerService.REQUEST_CIRCUIT_BREAKER_OVERHEAD_SETTING,
+                            HttpTransportSettings.SETTING_HTTP_TRACE_LOG_INCLUDE,
+                            HttpTransportSettings.SETTING_HTTP_TRACE_LOG_EXCLUDE,
+                            NetworkModule.HTTP_DEFAULT_TYPE_SETTING,
+                            NetworkModule.TRANSPORT_DEFAULT_TYPE_SETTING,
+                            Node.NODE_NAME_SETTING,
+                            TaskManager.TASK_RESOURCE_CONSUMERS_ENABLED,
+                            TaskResourceTrackingService.TASK_RESOURCE_TRACKING_ENABLED,
+                            ThreadPool.CLUSTER_THREAD_POOL_SIZE_SETTING,
+                            TransportSettings.TRACE_LOG_INCLUDE_SETTING,
+                            TransportSettings.TRACE_LOG_EXCLUDE_SETTING,
+                            TransportSettings.SLOW_OPERATION_THRESHOLD_SETTING
+                    )
+            )
+    );
+
 
     public ClusterSettings(final Settings nodeSettings, final Set<Setting<?>> settingsSet) {
         this(nodeSettings, settingsSet, Collections.emptySet());

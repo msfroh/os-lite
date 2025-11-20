@@ -37,16 +37,19 @@ dependencies {
     api "org.opensearch:opensearch-agent-policy:${opensearch_version}"
     api "org.opensearch:opensearch-cli:${opensearch_version}"
     api "org.opensearch:opensearch-core:${opensearch_version}"
-    compileOnly "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
-    testRuntimeOnly "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
+    api "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
+    // compileOnly "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
+    // testRuntimeOnly "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
     api "org.opensearch:opensearch-telemetry:${opensearch_version}"
     api "org.opensearch:opensearch-x-content:${opensearch_version}"
     api "org.reactivestreams:reactive-streams:1.0.4"
-    compileOnly "org.apache.logging.log4j:log4j-core:2.21.0"
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    api "org.apache.logging.log4j:log4j-api:2.24.1"
+    api "org.apache.logging.log4j:log4j-core:2.24.1"
+    api "org.apache.logging.log4j:log4j-jul:2.24.1"
+    annotationProcessor "org.apache.logging.log4j:log4j-core:2.24.1"
 }
+
+compileJava.options.compilerArgs += ['-processor', 'org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor']
 
 test {
     useJUnitPlatform()

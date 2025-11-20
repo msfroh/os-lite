@@ -15,7 +15,7 @@
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -24,42 +24,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 /*
  * Modifications Copyright OpenSearch Contributors. See
  * GitHub history for details.
  */
 
-package org.opensearch.common.lifecycle;
+package org.opensearch.http;
 
 /**
- * Base lifecycle listener.
+ * Timeout Exception for HTTP read operations
  *
  * @opensearch.internal
  */
-public abstract class LifecycleListener {
+public class HttpReadTimeoutException extends RuntimeException {
 
-    public void beforeStart() {
-
-    }
-
-    public void afterStart() {
+    public HttpReadTimeoutException(long readTimeoutMillis) {
+        super("http read timeout after " + readTimeoutMillis + "ms");
 
     }
 
-    public void beforeStop() {
-
-    }
-
-    public void afterStop() {
-
-    }
-
-    public void beforeClose() {
-
-    }
-
-    public void afterClose() {
-
+    public HttpReadTimeoutException(long readTimeoutMillis, Exception cause) {
+        super("http read timeout after " + readTimeoutMillis + "ms", cause);
     }
 }

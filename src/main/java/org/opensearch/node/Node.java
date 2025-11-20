@@ -218,6 +218,11 @@ public class Node implements Closeable {
                     settingsUpgraders
             );
             threadPool.registerClusterSettingsListeners(settingsModule.getClusterSettings());
+            final TaskResourceTrackingService taskResourceTrackingService = new TaskResourceTrackingService(
+                    settings,
+                    settingsModule.getClusterSettings(),
+                    threadPool
+            );
             final NetworkService networkService = new NetworkService(
                     getCustomNameResolvers(pluginsService.filterPlugins(NetworkPlugin.class))
             );
@@ -334,6 +339,7 @@ public class Node implements Closeable {
                b.bind(BigArrays.class).toInstance(bigArrays);
                b.bind(PageCacheRecycler.class).toInstance(pageCacheRecycler);
                b.bind(HttpServerTransport.class).toInstance(httpServerTransport);
+               b.bind(TaskResourceTrackingService.class).toInstance(taskResourceTrackingService);
             });
 
             injector = modules.createInjector();
