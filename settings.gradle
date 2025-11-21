@@ -1,1 +1,60 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ *
+ * Modifications Copyright OpenSearch Contributors. See
+ * GitHub history for details.
+ */
+
+ext.disableBuildCache = hasProperty('DISABLE_BUILD_CACHE') || System.getenv().containsKey('DISABLE_BUILD_CACHE')
+
+buildCache {
+    local {
+        enabled = !disableBuildCache
+    }
+}
+
 rootProject.name = 'os-lite'
+
+List projects = [
+  'build-tools',
+  'build-tools:reaper',
+  'distribution:archives:darwin-arm64-tar',
+  'distribution:tools:launchers',
+  'distribution:tools:java-version-checker',
+  'server',
+  'test:logger-usage'
+]
+
+/**
+ * Iterates over sub directories, looking for build.gradle, and adds a project if found
+ * for that dir with the given path prefix. Note that this requires each level
+ * of the dir hierarchy to have a build.gradle. Otherwise we would have to iterate
+ * all files/directories in the source tree to find all projects.
+ */
+void addSubProjects(String path, File dir) {
+    if (dir.isDirectory() == false) return;
+    if (dir.name == 'buildSrc') return;
+    if (new File(dir, 'build.gradle').exists() == false) return;
+    if (findProject(dir) != null) return;
+
+    final String projectName = "${path}:${dir.name}"
+    include projectName
+    if (path.isEmpty() || path.startsWith(':example-plugins')) {
+        project(projectName).projectDir = dir
+    }
+    for (File subdir : dir.listFiles()) {
+        addSubProjects(projectName, subdir)
+    }
+}
+
+addSubProjects('', new File(rootProject.projectDir, 'modules'))
+addSubProjects('', new File(rootProject.projectDir, 'plugins'))
+
+include projects.toArray(new String[0])
+
+project(':build-tools').projectDir = new File(rootProject.projectDir, 'buildSrc')
+project(':build-tools:reaper').projectDir = new File(rootProject.projectDir, 'buildSrc/reaper')

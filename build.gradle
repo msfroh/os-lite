@@ -1,56 +1,167 @@
-buildscript {
-    ext {
-        opensearch_version = System.getProperty("opensearch.version", "3.4.0-SNAPSHOT")
-        version_qualifier = System.getProperty("build.version_qualifier", "")
-        buildVersionQualifier = System.getProperty("build.version_qualifier", "")
-        isSnapshot = "true" == System.getProperty("build.snapshot", "true")
-        version_tokens = opensearch_version.tokenize('-')
-        opensearch_build = version_tokens[0] + '.0'
-    }
-}
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ *
+ * Modifications Copyright OpenSearch Contributors. See
+ * GitHub history for details.
+ */
+
+/*
+ * Licensed to Elasticsearch under one or more contributor
+ * license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright
+ * ownership. Elasticsearch licenses this file to you under
+ * the Apache License, Version 2.0 (the "License"); you may
+ * not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import org.opensearch.gradle.BuildPlugin
+import org.opensearch.gradle.VersionProperties
 
 plugins {
-    id 'java-library'
+    id 'lifecycle-base'
+    id 'opensearch.docker-support'
+    id 'opensearch.global-build-info'
+    id "com.diffplug.spotless" version "8.0.0" apply false
+    id "org.gradle.test-retry" version "1.6.2" apply false
+    id "test-report-aggregation"
+    id 'jacoco-report-aggregation'
 }
-group = 'org.opensearch'
+
+apply from: 'gradle/build-complete.gradle'
+apply from: 'gradle/runtime-jdk-provision.gradle'
+apply from: 'gradle/ide.gradle'
+apply from: 'gradle/forbidden-dependencies.gradle'
+apply from: 'gradle/formatting.gradle'
+apply from: 'gradle/run.gradle'
+//apply from: 'gradle/missing-javadoc.gradle'
+apply from: 'gradle/code-coverage.gradle'
+
+// common maven publishing configuration
+allprojects {
+    group = 'org.opensearch'
+    version = VersionProperties.getOpenSearch()
+    description = "OpenSearch subproject ${project.path}"
+}
+
+configure(allprojects) {
+    project.pluginManager.withPlugin('nebula.maven-base-publish') {
+        if (project.pluginManager.hasPlugin('opensearch.build') == false) {
+            throw new GradleException("Project ${path} publishes a pom but doesn't apply the build plugin.")
+        }
+    }
+}
+
+subprojects {
+    // Default to the apache license
+    project.ext.licenseName = 'The Apache Software License, Version 2.0'
+    project.ext.licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+
+    // we only use maven publish to add tasks for pom generation
+    plugins.withType(MavenPublishPlugin).whenPluginAdded {
+        publishing {
+            publications {
+                // add license information to generated poms
+                all {
+                    pom.withXml { XmlProvider xml ->
+                        Node node = xml.asNode()
+                        node.appendNode('inceptionYear', '2021')
+
+                        Node license = node.appendNode('licenses').appendNode('license')
+                        license.appendNode('name', project.licenseName)
+                        license.appendNode('url', project.licenseUrl)
+                        license.appendNode('distribution', 'repo')
+
+                        Node developer = node.appendNode('developers').appendNode('developer')
+                        developer.appendNode('name', 'OpenSearch')
+                        developer.appendNode('url', 'https://github.com/opensearch-project/OpenSearch')
+                    }
+                }
+            }
+        }
+    }
+
+    plugins.withType(BuildPlugin).whenPluginAdded {
+        project.licenseFile = project.rootProject.file('licenses/APACHE-LICENSE-2.0.txt')
+        project.noticeFile = project.rootProject.file('NOTICE.txt')
+    }
+}
+
+subprojects {
+    project.ext.disableTasks = { String... tasknames ->
+        for (String taskname : tasknames) {
+            project.tasks.named(taskname).configure { onlyIf { false } }
+        }
+    }
+}
 
 allprojects {
-    version = opensearch_version.tokenize('-')[0] + '.0'
-    if (version_qualifier) {
-        version += "-${version_qualifier}"
+    // configure compiler options
+    tasks.withType(JavaCompile).configureEach { JavaCompile compile ->
+        options.fork = true
+
+        configure(options.forkOptions) {
+            memoryMaximumSize = project.property('options.forkOptions.memoryMaximumSize')
+        }
+
+        compile.options.compilerArgs << '-Xlint:auxiliaryclass'
+        compile.options.compilerArgs << '-Xlint:cast'
+        compile.options.compilerArgs << '-Xlint:classfile'
+        compile.options.compilerArgs << '-Xlint:dep-ann'
+        compile.options.compilerArgs << '-Xlint:divzero'
+        compile.options.compilerArgs << '-Xlint:empty'
+        compile.options.compilerArgs << '-Xlint:exports'
+        compile.options.compilerArgs << '-Xlint:fallthrough'
+        compile.options.compilerArgs << '-Xlint:finally'
+        compile.options.compilerArgs << '-Xlint:module'
+        compile.options.compilerArgs << '-Xlint:opens'
+        compile.options.compilerArgs << '-Xlint:overloads'
+        compile.options.compilerArgs << '-Xlint:overrides'
+        compile.options.compilerArgs << '-Xlint:-processing'
+        compile.options.compilerArgs << '-Xlint:rawtypes'
+        compile.options.compilerArgs << '-Xlint:removal'
+        compile.options.compilerArgs << '-Xlint:requires-automatic'
+        compile.options.compilerArgs << '-Xlint:requires-transitive-automatic'
+        compile.options.compilerArgs << '-Xlint:static'
+        compile.options.compilerArgs << '-Xlint:unchecked'
+        compile.options.compilerArgs << '-Xlint:varargs'
+        compile.options.compilerArgs << '-Xlint:preview'
+        // TODO: disabled warnings: path, serial, options, deprecation, try
+        // -path because gradle will send in paths that don't always exist.
+        // -missing because we have tons of missing @returns and @param.
+        // -serial because we don't use java serialization.
+        compile.options.compilerArgs << '-Xdoclint:accessibility'
+        compile.options.compilerArgs << '-Xdoclint:html'
+        compile.options.compilerArgs << '-Xdoclint:reference'
+        compile.options.compilerArgs << '-Xdoclint:syntax'
     }
-    if (isSnapshot) {
-        version += "-SNAPSHOT"
+    // ignore missing javadocs
+    tasks.withType(Javadoc).configureEach { Javadoc javadoc ->
+        // the -quiet here is because of a bug in gradle, in that adding a string option
+        // by itself is not added to the options. By adding quiet, both this option and
+        // the "value" -quiet is added, separated by a space. This is ok since the javadoc
+        // command already adds -quiet, so we are just duplicating it
+        // see https://discuss.gradle.org/t/add-custom-javadoc-option-that-does-not-take-an-argument/5959
+        javadoc.options.encoding = 'UTF8'
+        javadoc.options.addStringOption('Xdoclint:all,-missing', '-quiet')
+        boolean failOnJavadocWarning = project.ext.has('failOnJavadocWarning') ? project.ext.get('failOnJavadocWarning') : true
+        if (failOnJavadocWarning) {
+            javadoc.options.addStringOption('Xwerror', '-quiet')
+        }
+        javadoc.options.tags = ["opensearch.internal", "opensearch.api", "opensearch.experimental"]
+        javadoc.options.addStringOption("-release", java.targetCompatibility.majorVersion)
     }
-}
-
-repositories {
-    mavenLocal()
-    maven { url "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
-    mavenCentral()
-}
-
-dependencies {
-    api "io.projectreactor:reactor-core:3.7.5"
-    api "net.java.dev.jna:jna:5.16.0"
-    api "org.opensearch:opensearch-agent-bootstrap:${opensearch_version}"
-    api "org.opensearch:opensearch-agent-policy:${opensearch_version}"
-    api "org.opensearch:opensearch-cli:${opensearch_version}"
-    api "org.opensearch:opensearch-core:${opensearch_version}"
-    api "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
-    // compileOnly "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
-    // testRuntimeOnly "org.opensearch:opensearch-plugin-classloader:${opensearch_version}"
-    api "org.opensearch:opensearch-telemetry:${opensearch_version}"
-    api "org.opensearch:opensearch-x-content:${opensearch_version}"
-    api "org.reactivestreams:reactive-streams:1.0.4"
-    api "org.apache.logging.log4j:log4j-api:2.24.1"
-    api "org.apache.logging.log4j:log4j-core:2.24.1"
-    api "org.apache.logging.log4j:log4j-jul:2.24.1"
-    annotationProcessor "org.apache.logging.log4j:log4j-core:2.24.1"
-}
-
-compileJava.options.compilerArgs += ['-processor', 'org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor']
-
-test {
-    useJUnitPlatform()
 }

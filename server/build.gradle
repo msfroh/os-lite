@@ -1,0 +1,39 @@
+plugins {
+    id('opensearch.build')
+    id('opensearch.optional-dependencies')
+}
+group = 'org.opensearch'
+
+repositories {
+    mavenLocal()
+    maven { url = "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
+    mavenCentral()
+}
+
+dependencies {
+    api "org.opensearch:opensearch-agent-bootstrap:${project.version}"
+    api "org.opensearch:opensearch-agent-policy:${project.version}"
+    api "org.opensearch:opensearch-cli:${project.version}"
+    api "org.opensearch:opensearch-core:${project.version}"
+    api "org.opensearch:opensearch-plugin-classloader:${project.version}"
+    // compileOnly "org.opensearch:opensearch-plugin-classloader:${project.version}"
+    // testRuntimeOnly "org.opensearch:opensearch-plugin-classloader:${project.version}"
+    api "org.opensearch:opensearch-telemetry:${project.version}"
+    api "org.opensearch:opensearch-x-content:${project.version}"
+    api libs.jna
+    api libs.reactor.core
+    api libs.reactivestreams
+    api libs.log4japi
+    api libs.log4jcore, optional
+    api libs.log4jjul
+    annotationProcessor libs.log4jcore
+    annotationProcessor "org.opensearch:opensearch-common:${project.version}"
+}
+
+compileJava {
+    options.compilerArgs += ['-processor', ['org.apache.logging.log4j.core.config.plugins.processor.PluginProcessor',
+                                            'org.opensearch.common.annotation.processor.ApiAnnotationProcessor'].join(',')]
+}
+
+tasks.named("dependencyLicenses").configure { it.enabled = false }
+testingConventions.enabled = false
