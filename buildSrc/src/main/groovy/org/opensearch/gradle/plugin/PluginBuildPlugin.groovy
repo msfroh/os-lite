@@ -176,7 +176,6 @@ class PluginBuildPlugin implements Plugin<Project> {
         project.dependencies {
             if (BuildParams.isInternal) {
                 compileOnly project.project(':server')
-                testImplementation "org.opensearch.test:framework:${project.versions.opensearch}"
 //                testImplementation project.project(':test:framework')
             } else {
                 compileOnly "org.opensearch:opensearch:${project.versions.opensearch}"

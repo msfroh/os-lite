@@ -98,6 +98,8 @@ subprojects {
         project.licenseFile = project.rootProject.file('licenses/APACHE-LICENSE-2.0.txt')
         project.noticeFile = project.rootProject.file('NOTICE.txt')
     }
+
+    tasks.register('allDeps', DependencyReportTask.class, {})
 }
 
 subprojects {

@@ -1175,30 +1175,30 @@ public class OpenSearchNode implements TestClusterConfiguration {
         if (nodeName != null) {
             baseConfig.put("node.name", nodeName);
         }
-//        baseConfig.put("path.repo", confPathRepo.toAbsolutePath().toString());
-//        baseConfig.put("path.data", confPathData.toAbsolutePath().toString());
-//        baseConfig.put("path.logs", confPathLogs.toAbsolutePath().toString());
-//        baseConfig.put("path.shared_data", workingDir.resolve("sharedData").toString());
-//        baseConfig.put("node.attr.testattr", "test");
+        // baseConfig.put("path.repo", confPathRepo.toAbsolutePath().toString());
+        // baseConfig.put("path.data", confPathData.toAbsolutePath().toString());
+        // baseConfig.put("path.logs", confPathLogs.toAbsolutePath().toString());
+        // baseConfig.put("path.shared_data", workingDir.resolve("sharedData").toString());
+        // baseConfig.put("node.attr.testattr", "test");
         if (StringUtils.isNotBlank(zone)) {
             baseConfig.put("cluster.routing.allocation.awareness.attributes", "zone");
             baseConfig.put("node.attr.zone", zone);
         }
-//        baseConfig.put("node.portsfile", "true");
+        // baseConfig.put("node.portsfile", "true");
         baseConfig.put("http.port", httpPort);
         baseConfig.put("transport.port", transportPort);
         // Default the watermarks to absurdly low to prevent the tests from failing on nodes without enough disk space
-//        baseConfig.put("cluster.routing.allocation.disk.watermark.low", "1b");
-//        baseConfig.put("cluster.routing.allocation.disk.watermark.high", "1b");
+        // baseConfig.put("cluster.routing.allocation.disk.watermark.low", "1b");
+        // baseConfig.put("cluster.routing.allocation.disk.watermark.high", "1b");
         // increase script compilation limit since tests can rapid-fire script compilations
-//        baseConfig.put("script.disable_max_compilations_rate", "true");
-//        baseConfig.put("cluster.routing.allocation.disk.watermark.flood_stage", "1b");
+        // baseConfig.put("script.disable_max_compilations_rate", "true");
+        // baseConfig.put("cluster.routing.allocation.disk.watermark.flood_stage", "1b");
         // Temporarily disable the real memory usage circuit breaker. It depends on real memory usage which we have no full control
         // over and the REST client will not retry on circuit breaking exceptions yet (see #31986 for details). Once the REST client
         // can retry on circuit breaking exceptions, we can revert again to the default configuration.
-//        baseConfig.put("indices.breaker.total.use_real_memory", "false");
+        // baseConfig.put("indices.breaker.total.use_real_memory", "false");
         // Don't wait for state, just start up quickly. This will also allow new and old nodes in the BWC case to become the master
-//        baseConfig.put("discovery.initial_state_timeout", "0s");
+        // baseConfig.put("discovery.initial_state_timeout", "0s");
 
         HashSet<String> overriden = new HashSet<>(baseConfig.keySet());
         overriden.retainAll(settings.keySet());

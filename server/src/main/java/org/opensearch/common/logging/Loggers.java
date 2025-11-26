@@ -41,12 +41,8 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.opensearch.common.settings.Setting;
-import org.opensearch.core.index.Index;
-import org.opensearch.core.index.shard.ShardId;
 
 import java.util.Map;
-
-import static org.opensearch.core.common.util.CollectionUtils.asArrayList;
 
 /**
  * A set of utilities around Logging.
@@ -67,23 +63,6 @@ public class Loggers {
         "logger.",
         (key) -> new Setting<>(key, Level.INFO.name(), Level::valueOf, Setting.Property.Dynamic, Setting.Property.NodeScope)
     );
-
-    public static Logger getLogger(Class<?> clazz, ShardId shardId, String... prefixes) {
-        return getLogger(clazz, shardId.getIndex(), asArrayList(Integer.toString(shardId.id()), prefixes).toArray(new String[0]));
-    }
-
-    /**
-     * Just like {@link #getLogger(Class, ShardId, String...)} but String loggerName instead of
-     * Class and no extra prefixes.
-     */
-    public static Logger getLogger(String loggerName, ShardId shardId) {
-        String prefix = formatPrefix(shardId.getIndexName(), Integer.toString(shardId.id()));
-        return new PrefixLogger(LogManager.getLogger(loggerName), prefix);
-    }
-
-    public static Logger getLogger(Class<?> clazz, Index index, String... prefixes) {
-        return getLogger(clazz, asArrayList(Loggers.SPACE, index.getName(), prefixes).toArray(new String[0]));
-    }
 
     public static Logger getLogger(Class<?> clazz, String... prefixes) {
         return new PrefixLogger(LogManager.getLogger(clazz), formatPrefix(prefixes));

@@ -165,7 +165,7 @@ public class RunTask extends DefaultTestClustersTask {
             httpPort++;
             firstNode.setTransportPort(String.valueOf(transportPort));
             transportPort++;
-//            firstNode.setting("discovery.seed_hosts", LOCALHOST_ADDRESS_PREFIX + DEFAULT_TRANSPORT_PORT);
+            // firstNode.setting("discovery.seed_hosts", LOCALHOST_ADDRESS_PREFIX + DEFAULT_TRANSPORT_PORT);
             cluster.setPreserveDataDir(preserveData);
             for (OpenSearchNode node : cluster.getNodes()) {
                 if (node != firstNode) {
@@ -173,7 +173,7 @@ public class RunTask extends DefaultTestClustersTask {
                     httpPort++;
                     node.setTransportPort(String.valueOf(transportPort));
                     transportPort++;
-//                    node.setting("discovery.seed_hosts", LOCALHOST_ADDRESS_PREFIX + DEFAULT_TRANSPORT_PORT);
+                    // node.setting("discovery.seed_hosts", LOCALHOST_ADDRESS_PREFIX + DEFAULT_TRANSPORT_PORT);
                 }
                 additionalSettings.forEach(node::setting);
                 if (dataDir != null) {
