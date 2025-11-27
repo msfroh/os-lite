@@ -23,6 +23,7 @@ List projects = [
   'build-tools',
   'build-tools:reaper',
   'distribution:archives:darwin-arm64-tar',
+  'distribution:archives:linux-tar',
   'distribution:tools:launchers',
   'distribution:tools:java-version-checker',
   'server',

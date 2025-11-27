@@ -172,13 +172,15 @@ distribution_archives {
       archiveFiles(modulesFiles('linux-arm64'), 'tar', 'linux', 'arm64', JavaPackageType.NONE)
     }
   }
+  */
 
   linuxTar {
-    archiveClassifier = 'linux-x64'
-    content {
-      archiveFiles(modulesFiles('linux-x64'), 'tar', 'linux', 'x64', JavaPackageType.JDK)
-    }
+      archiveClassifier = 'linux-x64'
+      content {
+          archiveFiles(modulesFiles('linux-x64'), 'tar', 'linux', 'x64', JavaPackageType.JDK)
+      }
   }
+  /*
 
   noJdkLinuxTar {
     archiveClassifier = 'no-jdk-linux-x64'
