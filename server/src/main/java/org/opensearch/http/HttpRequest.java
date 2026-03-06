@@ -36,8 +36,6 @@ import org.opensearch.common.Nullable;
 import org.opensearch.common.annotation.PublicApi;
 import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
-import org.opensearch.rest.RestRequest;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -66,10 +64,10 @@ public interface HttpRequest {
     /**
      * Returns the HTTP method used in the HTTP request.
      *
-     * @return the {@link RestRequest.Method} used in the REST request
+     * @return the {@link HttpMethod} used in the HTTP request
      * @throws IllegalArgumentException if the HTTP method is invalid
      */
-    RestRequest.Method method();
+    HttpMethod method();
 
     /**
      * The uri of the rest request, with the query string.

@@ -12,7 +12,7 @@ import org.opensearch.common.annotation.InternalApi;
 import org.opensearch.common.collect.Tuple;
 import org.opensearch.core.common.Strings;
 import org.opensearch.http.HttpRequest;
-import org.opensearch.rest.RestRequest;
+import org.opensearch.http.dispatch.DispatchRequest;
 import org.opensearch.tasks.Task;
 import org.opensearch.telemetry.tracing.attributes.Attributes;
 import org.opensearch.transport.TcpChannel;
@@ -51,11 +51,11 @@ public final class SpanBuilder {
     }
 
     /**
-     * Creates {@link SpanCreationContext} from the {@link RestRequest}
-     * @param request Rest request
+     * Creates {@link SpanCreationContext} from the {@link DispatchRequest}
+     * @param request dispatch request (e.g. RestRequest from rest module)
      * @return context
      */
-    public static SpanCreationContext from(RestRequest request) {
+    public static SpanCreationContext from(DispatchRequest request) {
         return SpanCreationContext.client().name(createSpanName(request)).attributes(buildSpanAttributes(request));
     }
 
@@ -111,12 +111,12 @@ public final class SpanBuilder {
         });
     }
 
-    private static String createSpanName(RestRequest restRequest) {
+    private static String createSpanName(DispatchRequest request) {
         String spanName = "rest_request";
-        if (restRequest != null) {
+        if (request != null) {
             try {
-                String methodName = restRequest.method().name();
-                String rawPath = restRequest.rawPath();
+                String methodName = request.method().name();
+                String rawPath = request.rawPath();
                 spanName = methodName + SEPARATOR + rawPath;
             } catch (Exception e) {
                 // swallow the exception and keep the default name.
@@ -125,13 +125,13 @@ public final class SpanBuilder {
         return spanName;
     }
 
-    private static Attributes buildSpanAttributes(RestRequest restRequest) {
-        if (restRequest != null) {
+    private static Attributes buildSpanAttributes(DispatchRequest request) {
+        if (request != null) {
             Attributes attributes = Attributes.create()
-                .addAttribute(AttributeNames.REST_REQ_ID, restRequest.getRequestId())
-                .addAttribute(AttributeNames.REST_REQ_RAW_PATH, restRequest.rawPath());
+                .addAttribute(AttributeNames.REST_REQ_ID, request.getRequestId())
+                .addAttribute(AttributeNames.REST_REQ_RAW_PATH, request.rawPath());
 
-            Tuple<String, String> uriParts = splitUri(restRequest.uri());
+            Tuple<String, String> uriParts = splitUri(request.uri());
             String query = uriParts.v2();
             if (query.isBlank() == false) {
                 attributes.addAttribute(AttributeNames.HTTP_REQ_QUERY_PARAMS, query);

@@ -48,9 +48,9 @@ import org.opensearch.core.action.ActionResponse;
 import org.opensearch.core.indices.breaker.CircuitBreakerService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ActionPlugin.ActionHandler;
-import org.opensearch.rest.RestController;
-import org.opensearch.rest.RestHandler;
-import org.opensearch.rest.RestHeaderDefinition;
+import org.opensearch.action.rest.RestController;
+import org.opensearch.action.rest.RestHandler;
+import org.opensearch.action.rest.RestHeaderDefinition;
 import org.opensearch.tasks.Task;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.transport.client.node.NodeClient;
@@ -95,8 +95,9 @@ public class ActionModule extends AbstractModule {
     // a different JVM and possibly on a different server.
     private final DynamicActionRegistry dynamicActionRegistry;
     private final ActionFilters actionFilters;
-    private final RestController restController;
     private final ThreadPool threadPool;
+    private final Set<RestHeaderDefinition> restHeaders;
+    private final UnaryOperator<RestHandler> restWrapper;
 
     public ActionModule(
         Settings settings,
@@ -116,22 +117,22 @@ public class ActionModule extends AbstractModule {
         actions = setupActions(actionPlugins);
         actionFilters = setupActionFilters(actionPlugins);
         dynamicActionRegistry = new DynamicActionRegistry();
-        Set<RestHeaderDefinition> headers = Stream.concat(
+        this.restHeaders = Stream.concat(
             actionPlugins.stream().flatMap(p -> p.getRestHeaders().stream()),
-            Stream.of(new RestHeaderDefinition(Task.X_OPAQUE_ID, false))
+            Stream.of(new org.opensearch.action.rest.RestHeaderDefinition(Task.X_OPAQUE_ID, false))
         ).collect(Collectors.toSet());
-        UnaryOperator<RestHandler> restWrapper = null;
+        UnaryOperator<RestHandler> wrapper = null;
         for (ActionPlugin plugin : actionPlugins) {
-            UnaryOperator<RestHandler> newRestWrapper = plugin.getRestHandlerWrapper(threadPool.getThreadContext(), headers);
+            UnaryOperator<RestHandler> newRestWrapper = plugin.getRestHandlerWrapper(threadPool.getThreadContext(), this.restHeaders);
             if (newRestWrapper != null) {
                 logger.debug("Using REST wrapper from plugin " + plugin.getClass().getName());
-                if (restWrapper != null) {
+                if (wrapper != null) {
                     throw new IllegalArgumentException("Cannot have more than one plugin implementing a REST wrapper");
                 }
-                restWrapper = newRestWrapper;
+                wrapper = newRestWrapper;
             }
         }
-        restController = new RestController(headers, restWrapper, nodeClient, circuitBreakerService, usageService);
+        this.restWrapper = wrapper;
     }
 
     public Map<String, ActionHandler<?, ?>> getActions() {
@@ -168,13 +169,24 @@ public class ActionModule extends AbstractModule {
         );
     }
 
-    public void initRestHandlers(Supplier<DiscoveryNodes> nodesInCluster) {
-        Consumer<RestHandler> registerHandler = handler -> { restController.registerHandler(handler); };
+    /**
+     * Registers REST handlers with the given {@link RestController}. Call once a RestController is available.
+     */
+    public void initRestHandlers(RestController restController, Supplier<DiscoveryNodes> nodesInCluster) {
+        Consumer<RestHandler> registerHandler = handler -> restController.registerHandler(handler);
         for (ActionPlugin plugin : actionPlugins) {
             for (RestHandler handler : plugin.getRestHandlers(settings, restController, clusterSettings, settingsFilter, nodesInCluster)) {
                 registerHandler.accept(handler);
             }
         }
+    }
+
+    public Set<RestHeaderDefinition> getRestHeaders() {
+        return restHeaders;
+    }
+
+    public UnaryOperator<RestHandler> getRestWrapper() {
+        return restWrapper;
     }
 
     @Override
@@ -207,10 +219,6 @@ public class ActionModule extends AbstractModule {
 
     public DynamicActionRegistry getDynamicActionRegistry() {
         return dynamicActionRegistry;
-    }
-
-    public RestController getRestController() {
-        return restController;
     }
 
     /**

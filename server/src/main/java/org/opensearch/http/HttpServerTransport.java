@@ -37,9 +37,10 @@ import org.opensearch.common.lifecycle.LifecycleComponent;
 import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.common.transport.BoundTransportAddress;
 import org.opensearch.core.service.ReportingService;
-import org.opensearch.rest.RestChannel;
-import org.opensearch.rest.RestHandler;
-import org.opensearch.rest.RestRequest;
+import org.opensearch.core.xcontent.NamedXContentRegistry;
+import org.opensearch.http.dispatch.DispatchChannel;
+import org.opensearch.http.dispatch.DispatchChannelContext;
+import org.opensearch.http.dispatch.DispatchRequest;
 
 import java.util.Map;
 import java.util.Optional;
@@ -62,40 +63,40 @@ public interface HttpServerTransport extends LifecycleComponent, ReportingServic
     HttpStats stats();
 
     /**
-     * Dispatches HTTP requests.
+     * Dispatches HTTP requests. Uses only server types ({@link DispatchRequest}, {@link DispatchChannel}, {@link HttpMethod})
+     * so that server does not depend on the rest module. The rest module implements this interface.
      */
     interface Dispatcher {
         /**
-         * Finds the matching {@link RestHandler} that the request is going to be dispatched to, if any.
-         * @param uri request URI
-         * @param rawPath request raw path
-         * @param method request HTTP method
-         * @param params request parameters
-         * @return matching {@link RestHandler} that the request is going to be dispatched to, {@code Optional.empty()} if none match
+         * Creates a dispatch request from the HTTP request. May throw if the request is malformed.
          */
-        default Optional<RestHandler> dispatchHandler(String uri, String rawPath, RestRequest.Method method, Map<String, String> params) {
+        DispatchRequest createRequest(HttpRequest httpRequest, HttpChannel httpChannel, NamedXContentRegistry xContentRegistry);
+
+        /**
+         * Creates a dispatch channel for the response. {@code dispatchRequest} may be null when creating a channel for error responses only.
+         */
+        DispatchChannel createChannel(
+            HttpChannel httpChannel,
+            HttpRequest httpRequest,
+            DispatchRequest dispatchRequest,
+            DispatchChannelContext context
+        );
+
+        /**
+         * Finds a matching handler, if any. Default returns empty.
+         */
+        default Optional<?> dispatchHandler(String uri, String rawPath, HttpMethod method, Map<String, String> params) {
             return Optional.empty();
         }
 
         /**
-         * Dispatches the {@link RestRequest} to the relevant request handler or responds to the given rest channel directly if
-         * the request can't be handled by any request handler.
-         *
-         * @param request       the request to dispatch
-         * @param channel       the response channel of this request
-         * @param threadContext the thread context
+         * Dispatches the request to the relevant handler.
          */
-        void dispatchRequest(RestRequest request, RestChannel channel, ThreadContext threadContext);
+        void dispatchRequest(DispatchRequest request, DispatchChannel channel, ThreadContext threadContext);
 
         /**
-         * Dispatches a bad request. For example, if a request is malformed it will be dispatched via this method with the cause of the bad
-         * request.
-         *
-         * @param channel       the response channel of this request
-         * @param threadContext the thread context
-         * @param cause         the cause of the bad request
+         * Dispatches a bad request (e.g. malformed) with the given cause.
          */
-        void dispatchBadRequest(RestChannel channel, ThreadContext threadContext, Throwable cause);
-
+        void dispatchBadRequest(DispatchChannel channel, ThreadContext threadContext, Throwable cause);
     }
 }

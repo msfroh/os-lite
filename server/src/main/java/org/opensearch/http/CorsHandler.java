@@ -52,8 +52,6 @@ import org.opensearch.common.settings.SettingsException;
 import org.opensearch.core.common.Strings;
 import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.core.rest.RestStatus;
-import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.RestUtils;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -226,7 +224,7 @@ public class CorsHandler {
 
     private static boolean isPreflightRequest(final HttpRequest request) {
         final Map<String, List<String>> headers = request.getHeaders();
-        return request.method().equals(RestRequest.Method.OPTIONS)
+        return request.method().equals(HttpMethod.OPTIONS)
             && headers.containsKey(ORIGIN)
             && headers.containsKey(ACCESS_CONTROL_REQUEST_METHOD);
     }
@@ -240,7 +238,7 @@ public class CorsHandler {
     }
 
     private void setAllowMethods(final HttpResponse response) {
-        for (RestRequest.Method method : config.allowedRequestMethods()) {
+        for (HttpMethod method : config.allowedRequestMethods()) {
             response.addHeader(ACCESS_CONTROL_ALLOW_METHODS, method.name().trim());
         }
     }
@@ -273,7 +271,7 @@ public class CorsHandler {
         private final Optional<Pattern> pattern;
         private final boolean anyOrigin;
         private final boolean credentialsAllowed;
-        private final Set<RestRequest.Method> allowedRequestMethods;
+        private final Set<HttpMethod> allowedRequestMethods;
         private final Set<String> allowedRequestHeaders;
         private final long maxAge;
 
@@ -309,7 +307,7 @@ public class CorsHandler {
             return credentialsAllowed;
         }
 
-        public Set<RestRequest.Method> allowedRequestMethods() {
+        public Set<HttpMethod> allowedRequestMethods() {
             return allowedRequestMethods;
         }
 
@@ -355,7 +353,7 @@ public class CorsHandler {
             private final boolean anyOrigin;
             private boolean allowCredentials = false;
             long maxAge;
-            private final Set<RestRequest.Method> requestMethods = new HashSet<>();
+            private final Set<HttpMethod> requestMethods = new HashSet<>();
             private final Set<String> requestHeaders = new HashSet<>();
 
             private Builder() {
@@ -393,7 +391,7 @@ public class CorsHandler {
                 return this;
             }
 
-            public Builder allowedRequestMethods(RestRequest.Method[] methods) {
+            public Builder allowedRequestMethods(HttpMethod[] methods) {
                 requestMethods.addAll(Arrays.asList(methods));
                 return this;
             }
@@ -434,9 +432,9 @@ public class CorsHandler {
             builder = Config.Builder.forAnyOrigin();
         } else {
             try {
-                Pattern p = RestUtils.checkCorsSettingForRegex(origin);
+                Pattern p = checkCorsSettingForRegex(origin);
                 if (p == null) {
-                    builder = Config.Builder.forOrigins(RestUtils.corsSettingAsArray(origin));
+                    builder = Config.Builder.forOrigins(corsSettingAsArray(origin));
                 } else {
                     builder = Config.Builder.forPattern(p);
                 }
@@ -448,10 +446,10 @@ public class CorsHandler {
             builder.allowCredentials();
         }
         String[] strMethods = Strings.tokenizeToStringArray(SETTING_CORS_ALLOW_METHODS.get(settings), ",");
-        RestRequest.Method[] methods = Arrays.stream(strMethods)
+        HttpMethod[] methods = Arrays.stream(strMethods)
             .map(s -> s.toUpperCase(Locale.ENGLISH))
-            .map(RestRequest.Method::valueOf)
-            .toArray(RestRequest.Method[]::new);
+            .map(HttpMethod::valueOf)
+            .toArray(HttpMethod[]::new);
         Config config = builder.allowedRequestMethods(methods)
             .maxAge(SETTING_CORS_MAX_AGE.get(settings))
             .allowedRequestHeaders(Strings.tokenizeToStringArray(SETTING_CORS_ALLOW_HEADERS.get(settings), ","))
@@ -461,5 +459,22 @@ public class CorsHandler {
 
     public static CorsHandler fromSettings(Settings settings) {
         return new CorsHandler(buildConfig(settings));
+    }
+
+    private static Pattern checkCorsSettingForRegex(String corsSetting) {
+        if (corsSetting == null) return null;
+        int len = corsSetting.length();
+        boolean isRegex = len > 2 && corsSetting.startsWith("/") && corsSetting.endsWith("/");
+        if (isRegex) {
+            return Pattern.compile(corsSetting.substring(1, corsSetting.length() - 1));
+        }
+        return null;
+    }
+
+    private static String[] corsSettingAsArray(String corsSetting) {
+        if (Strings.isNullOrEmpty(corsSetting)) {
+            return new String[0];
+        }
+        return Arrays.stream(corsSetting.split(",")).map(String::trim).toArray(String[]::new);
     }
 }

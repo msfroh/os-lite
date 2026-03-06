@@ -51,7 +51,8 @@
 
 package org.opensearch.usage;
 
-import org.opensearch.rest.BaseRestHandler;
+import org.opensearch.action.rest.RestUsageService;
+import org.opensearch.action.rest.UsageTrackedRestHandler;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -63,9 +64,9 @@ import java.util.Objects;
  *
  * @opensearch.internal
  */
-public class UsageService {
+public class UsageService implements RestUsageService {
 
-    private final Map<String, BaseRestHandler> handlers;
+    private final Map<String, UsageTrackedRestHandler> handlers;
 
     public UsageService() {
         this.handlers = new HashMap<>();
@@ -74,14 +75,15 @@ public class UsageService {
     /**
      * Add a REST handler to this service.
      *
-     * @param handler the {@link BaseRestHandler} to add to the usage service.
+     * @param handler the handler to add to the usage service.
      */
-    public void addRestHandler(BaseRestHandler handler) {
+    @Override
+    public void addRestHandler(UsageTrackedRestHandler handler) {
         Objects.requireNonNull(handler);
         if (handler.getName() == null) {
             throw new IllegalArgumentException("handler of type [" + handler.getClass().getName() + "] does not have a name");
         }
-        final BaseRestHandler maybeHandler = handlers.put(handler.getName(), handler);
+        final UsageTrackedRestHandler maybeHandler = handlers.put(handler.getName(), handler);
         /*
          * Handlers will be registered multiple times, once for each route that the handler handles. This means that we will see handlers
          * multiple times, so we do not have a conflict if we are seeing the same instance multiple times. So, we only reject if a handler

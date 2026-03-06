@@ -34,7 +34,6 @@ package org.opensearch.http;
 
 import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
-import org.opensearch.rest.RestRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,7 @@ public class HttpPipelinedRequest implements HttpRequest, HttpPipelinedMessage {
     }
 
     @Override
-    public RestRequest.Method method() {
+    public HttpMethod method() {
         return delegate.method();
     }
 

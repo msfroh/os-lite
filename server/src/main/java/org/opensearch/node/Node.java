@@ -84,7 +84,6 @@ import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.PluginInfo;
 import org.opensearch.plugins.PluginsService;
 import org.opensearch.plugins.SecureSettingsFactory;
-import org.opensearch.rest.RestController;
 import org.opensearch.tasks.Task;
 import org.opensearch.tasks.TaskCancellationService;
 import org.opensearch.tasks.TaskResourceTrackingService;
@@ -307,7 +306,7 @@ public class Node implements Closeable {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
-            final RestController restController = actionModule.getRestController();
+            final org.opensearch.http.HttpServerTransport.Dispatcher dispatcher = new org.opensearch.http.dispatch.NoOpDispatcher();
             final NetworkModule networkModule = new NetworkModule(
                 settings,
                 pluginsService.filterPlugins(NetworkPlugin.class),
@@ -318,7 +317,7 @@ public class Node implements Closeable {
                 namedWriteableRegistry,
                 xContentRegistry,
                 networkService,
-                restController,
+                dispatcher,
                 settingsModule.getClusterSettings(),
                 tracer,
                 Collections.emptyList(),
@@ -376,8 +375,6 @@ public class Node implements Closeable {
             dynamicActionRegistry.registerUnmodifiableActionMap(injector.getInstance(new Key<Map<ActionType, TransportAction>>() {
             }));
             client.initialize(dynamicActionRegistry, () -> nodeId, namedWriteableRegistry);
-            logger.debug("initializing HTTP handlers ...");
-            actionModule.initRestHandlers(() -> DiscoveryNodes.builder().build());
             logger.info("initialized");
         } catch (Exception ex) {
             throw new OpenSearchException("failed to bind service", ex);

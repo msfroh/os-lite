@@ -28,7 +28,7 @@
  * under the License.
  */
 
-configure(subprojects.findAll { it.parent.path == project.path }) {
+configure(subprojects.findAll { it.parent.path == project.path && it.name != 'rest' }) {
   group = 'org.opensearch.plugin' // for modules which publish client jars
   apply plugin: 'opensearch.testclusters'
   apply plugin: 'opensearch.opensearchplugin'
@@ -46,5 +46,15 @@ configure(subprojects.findAll { it.parent.path == project.path }) {
   }
   if (project.file('src/main/config').exists()) {
     throw new InvalidModelException("Modules cannot contain config files")
+  }
+}
+
+// Rest is a library consumed by server; opensearchplugin gives it compileOnly server (like transport-netty4)
+configure(subprojects.findAll { it.parent.path == project.path && it.name == 'rest' }) {
+  apply plugin: 'opensearch.opensearchplugin'
+  opensearchplugin {
+    name = project.name
+    description = 'REST layer library consumed by server'
+    classname = 'org.opensearch.rest.RestModulePlugin'
   }
 }

@@ -43,9 +43,9 @@ import org.opensearch.common.settings.SettingsFilter;
 import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionResponse;
 import org.opensearch.core.common.Strings;
-import org.opensearch.rest.RestController;
-import org.opensearch.rest.RestHandler;
-import org.opensearch.rest.RestHeaderDefinition;
+import org.opensearch.action.rest.RestController;
+import org.opensearch.action.rest.RestHandler;
+import org.opensearch.action.rest.RestHeaderDefinition;
 
 import java.util.Collection;
 import java.util.Collections;

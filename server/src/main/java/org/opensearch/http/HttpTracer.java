@@ -39,15 +39,15 @@ import org.opensearch.common.Nullable;
 import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.core.common.Strings;
-import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.RestResponse;
+import org.opensearch.core.rest.RestStatus;
+import org.opensearch.http.dispatch.DispatchRequest;
 import org.opensearch.tasks.Task;
 import org.opensearch.transport.TransportService;
 
 import java.util.List;
 
 /**
- * Http request trace logger. See {@link #maybeTraceRequest(RestRequest, Exception)} for details.
+ * Http request trace logger. See {@link #maybeTraceRequest(DispatchRequest, Exception)} for details.
  *
  * @opensearch.internal
  */
@@ -72,22 +72,20 @@ class HttpTracer {
      * in {@link HttpTransportSettings#SETTING_HTTP_TRACE_LOG_INCLUDE} and {@link HttpTransportSettings#SETTING_HTTP_TRACE_LOG_EXCLUDE}.
      * If the request was logged returns a logger to log sending the response with or {@code null} otherwise.
      *
-     * @param restRequest Rest request to trace
-     * @param e           Exception when handling the request or {@code null} if none
-     * @return            This instance to use for logging the response via {@link #traceResponse} to this request if it was logged or
-     *                    {@code null} if the request wasn't logged
+     * @param request Dispatch request to trace
+     * @param e       Exception when handling the request or {@code null} if none
+     * @return       This instance to use for logging the response via {@link #traceResponse} if the request was logged, or {@code null}
      */
     @Nullable
-    HttpTracer maybeTraceRequest(RestRequest restRequest, @Nullable Exception e) {
-        if (logger.isTraceEnabled() && TransportService.shouldTraceAction(restRequest.uri(), tracerLogInclude, tracerLogExclude)) {
+    HttpTracer maybeTraceRequest(DispatchRequest request, @Nullable Exception e) {
+        if (logger.isTraceEnabled() && TransportService.shouldTraceAction(request.uri(), tracerLogInclude, tracerLogExclude)) {
             logger.trace(
                 new ParameterizedMessage(
-                    "[{}][{}][{}][{}] received request from [{}]",
-                    restRequest.getRequestId(),
-                    restRequest.header(Task.X_OPAQUE_ID),
-                    restRequest.method(),
-                    restRequest.uri(),
-                    restRequest.getHttpChannel()
+                    "[{}][{}][{}][{}] received request",
+                    request.getRequestId(),
+                    request.header(Task.X_OPAQUE_ID),
+                    request.method(),
+                    request.uri()
                 ),
                 e
             );
@@ -97,21 +95,15 @@ class HttpTracer {
     }
 
     /**
-     * Logs the response to a request that was logged by {@link #maybeTraceRequest(RestRequest, Exception)}.
-     *
-     * @param restResponse  RestResponse
-     * @param httpChannel   HttpChannel the response was sent on
-     * @param contentLength Value of the response content length header
-     * @param opaqueHeader  Value of HTTP header {@link Task#X_OPAQUE_ID}
-     * @param requestId     Request id as returned by {@link RestRequest#getRequestId()}
-     * @param success       Whether the response was successfully sent
+     * Logs the response to a request that was logged by {@link #maybeTraceRequest(DispatchRequest, Exception)}.
      */
     void traceResponse(
-        RestResponse restResponse,
-        HttpChannel httpChannel,
-        String contentLength,
-        String opaqueHeader,
         long requestId,
+        String opaqueHeader,
+        RestStatus status,
+        String contentType,
+        String contentLength,
+        HttpChannel httpChannel,
         boolean success
     ) {
         logger.trace(
@@ -119,9 +111,9 @@ class HttpTracer {
                 "[{}][{}][{}][{}][{}][{}] sent response to [{}] success [{}]",
                 requestId,
                 opaqueHeader,
-                restResponse.status(),
-                restResponse.status().getStatus(),
-                restResponse.contentType(),
+                status,
+                status.getStatus(),
+                contentType,
                 contentLength,
                 httpChannel,
                 success
@@ -130,13 +122,13 @@ class HttpTracer {
     }
 
     /**
-     * Logs the response chunk to a request that was logged by {@link #maybeTraceRequest(RestRequest, Exception)}.
+     * Logs the response chunk to a request that was logged by {@link #maybeTraceRequest(DispatchRequest, Exception)}.
      *
      * @param chunk         response chunk
      * @param httpChannel   HttpChannel the response was sent on
      * @param contentLength Value of the response content length header
      * @param opaqueHeader  Value of HTTP header {@link Task#X_OPAQUE_ID}
-     * @param requestId     Request id as returned by {@link RestRequest#getRequestId()}
+     * @param requestId     Request id as returned by {@link org.opensearch.http.dispatch.DispatchRequest#getRequestId()}
      * @param success       Whether the response was successfully sent
      */
     void traceChunk(

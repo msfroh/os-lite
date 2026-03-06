@@ -1,0 +1,31 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Modifications Copyright OpenSearch Contributors. See
+ * GitHub history for details.
+ */
+
+// Rest module is a library consumed by server, not a loadable plugin
+apply plugin: 'opensearch.build'
+
+repositories {
+    mavenLocal()
+    maven { url = "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
+    mavenCentral()
+}
+
+dependencies {
+    api "org.opensearch:opensearch-core:${project.version}"
+    api "org.opensearch:opensearch-x-content:${project.version}"
+    api "org.opensearch:opensearch-common:${project.version}"
+    api "org.reactivestreams:reactive-streams:1.0.4"
+    api "io.projectreactor:reactor-core:3.8.0"
+    annotationProcessor "org.opensearch:opensearch-common:${project.version}"
+}
+
+compileJava {
+    options.compilerArgs += ['-processor', 'org.opensearch.common.annotation.processor.ApiAnnotationProcessor']
+}
+
+tasks.named("dependencyLicenses").configure { it.enabled = false }
+testingConventions.enabled = false

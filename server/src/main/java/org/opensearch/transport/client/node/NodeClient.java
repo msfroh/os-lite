@@ -48,6 +48,7 @@ import org.opensearch.tasks.Task;
 import org.opensearch.tasks.TaskListener;
 import org.opensearch.threadpool.ThreadPool;
 import org.opensearch.transport.client.OpenSearchClient;
+import org.opensearch.action.rest.RestClient;
 
 import java.io.Closeable;
 import java.util.function.Supplier;
@@ -58,7 +59,7 @@ import java.util.function.Supplier;
  * @opensearch.api
  */
 @PublicApi(since = "1.0.0")
-public class NodeClient implements OpenSearchClient, Closeable {
+public class NodeClient implements OpenSearchClient, org.opensearch.action.rest.RestClient, Closeable {
 
     private final Settings settings;
     private final ThreadPool threadPool;
