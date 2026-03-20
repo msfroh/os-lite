@@ -43,7 +43,6 @@ import org.opensearch.action.support.TransportAction;
 import org.opensearch.bootstrap.BootstrapCheck;
 import org.opensearch.bootstrap.BootstrapContext;
 import org.opensearch.cluster.node.DiscoveryNode;
-import org.opensearch.cluster.node.DiscoveryNodes;
 import org.opensearch.common.Nullable;
 import org.opensearch.common.Randomness;
 import org.opensearch.common.SetOnce;
@@ -84,7 +83,6 @@ import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.PluginInfo;
 import org.opensearch.plugins.PluginsService;
 import org.opensearch.plugins.SecureSettingsFactory;
-import org.opensearch.rest.RestController;
 import org.opensearch.tasks.Task;
 import org.opensearch.tasks.TaskCancellationService;
 import org.opensearch.tasks.TaskResourceTrackingService;
@@ -97,7 +95,6 @@ import org.opensearch.transport.Transport;
 import org.opensearch.transport.TransportInterceptor;
 import org.opensearch.transport.TransportService;
 import org.opensearch.transport.client.node.NodeClient;
-import org.opensearch.usage.UsageService;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -284,17 +281,7 @@ public class Node implements Closeable {
             );
             resourcesToClose.add(circuitBreakerService);
 
-            final UsageService usageService = new UsageService();
-            ActionModule actionModule = new ActionModule(
-                settings,
-                settingsModule.getClusterSettings(),
-                settingsModule.getSettingsFilter(),
-                threadPool,
-                pluginsService.filterPlugins(ActionPlugin.class),
-                client,
-                circuitBreakerService,
-                usageService
-            );
+            ActionModule actionModule = new ActionModule(pluginsService.filterPlugins(ActionPlugin.class));
             modules.add(actionModule);
 
             final PageCacheRecycler pageCacheRecycler = createPageCacheRecycler(settings);
@@ -307,7 +294,6 @@ public class Node implements Closeable {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toList());
-            final RestController restController = actionModule.getRestController();
             final NetworkModule networkModule = new NetworkModule(
                 settings,
                 pluginsService.filterPlugins(NetworkPlugin.class),
@@ -318,7 +304,7 @@ public class Node implements Closeable {
                 namedWriteableRegistry,
                 xContentRegistry,
                 networkService,
-                restController,
+                HttpServerTransport.NO_OP_DISPATCHER,
                 settingsModule.getClusterSettings(),
                 tracer,
                 Collections.emptyList(),
@@ -376,8 +362,6 @@ public class Node implements Closeable {
             dynamicActionRegistry.registerUnmodifiableActionMap(injector.getInstance(new Key<Map<ActionType, TransportAction>>() {
             }));
             client.initialize(dynamicActionRegistry, () -> nodeId, namedWriteableRegistry);
-            logger.debug("initializing HTTP handlers ...");
-            actionModule.initRestHandlers(() -> DiscoveryNodes.builder().build());
             logger.info("initialized");
         } catch (Exception ex) {
             throw new OpenSearchException("failed to bind service", ex);

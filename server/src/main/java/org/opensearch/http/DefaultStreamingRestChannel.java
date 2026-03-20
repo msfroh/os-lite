@@ -35,12 +35,12 @@ import static org.opensearch.tasks.Task.X_OPAQUE_ID;
  *
  * @opensearch.internal
  */
-class DefaultStreamingRestChannel extends DefaultRestChannel implements StreamingRestChannel {
+public class DefaultStreamingRestChannel extends DefaultRestChannel implements StreamingRestChannel {
     private final StreamingHttpChannel streamingHttpChannel;
     @Nullable
     private final HttpTracer tracerLog;
 
-    DefaultStreamingRestChannel(
+    public DefaultStreamingRestChannel(
         StreamingHttpChannel streamingHttpChannel,
         HttpRequest httpRequest,
         RestRequest request,

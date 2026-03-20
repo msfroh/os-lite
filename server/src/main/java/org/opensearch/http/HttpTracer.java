@@ -51,14 +51,14 @@ import java.util.List;
  *
  * @opensearch.internal
  */
-class HttpTracer {
+public class HttpTracer {
 
     private final Logger logger = LogManager.getLogger(HttpTracer.class);
 
     private volatile String[] tracerLogInclude;
     private volatile String[] tracerLogExclude;
 
-    HttpTracer(Settings settings, ClusterSettings clusterSettings) {
+    public HttpTracer(Settings settings, ClusterSettings clusterSettings) {
 
         setTracerLogInclude(HttpTransportSettings.SETTING_HTTP_TRACE_LOG_INCLUDE.get(settings));
         setTracerLogExclude(HttpTransportSettings.SETTING_HTTP_TRACE_LOG_EXCLUDE.get(settings));
@@ -78,7 +78,7 @@ class HttpTracer {
      *                    {@code null} if the request wasn't logged
      */
     @Nullable
-    HttpTracer maybeTraceRequest(RestRequest restRequest, @Nullable Exception e) {
+    public HttpTracer maybeTraceRequest(RestRequest restRequest, @Nullable Exception e) {
         if (logger.isTraceEnabled() && TransportService.shouldTraceAction(restRequest.uri(), tracerLogInclude, tracerLogExclude)) {
             logger.trace(
                 new ParameterizedMessage(

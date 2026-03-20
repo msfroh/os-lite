@@ -35,11 +35,13 @@ package org.opensearch.rest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.ParameterizedMessage;
+import org.opensearch.ExceptionsHelper;
 import org.opensearch.OpenSearchException;
 import org.opensearch.common.Nullable;
 import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.common.logging.DeprecationLogger;
 import org.opensearch.common.path.PathTrie;
+import org.opensearch.common.util.BigArrays;
 import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.common.util.io.Streams;
 import org.opensearch.common.xcontent.XContentType;
@@ -51,11 +53,24 @@ import org.opensearch.core.indices.breaker.CircuitBreakerService;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.MediaTypeRegistry;
+import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentBuilder;
+import org.opensearch.http.CorsHandler;
+import org.opensearch.http.DefaultRestChannel;
+import org.opensearch.http.DefaultStreamingRestChannel;
+import org.opensearch.http.HttpChannel;
 import org.opensearch.http.HttpChunk;
+import org.opensearch.http.HttpHandlingSettings;
 import org.opensearch.http.HttpRequest;
 import org.opensearch.http.HttpServerTransport;
+import org.opensearch.http.HttpTracer;
+import org.opensearch.http.StreamingHttpChannel;
 import org.opensearch.http.UrlUtils;
+import org.opensearch.telemetry.tracing.Span;
+import org.opensearch.telemetry.tracing.SpanBuilder;
+import org.opensearch.telemetry.tracing.SpanScope;
+import org.opensearch.telemetry.tracing.Tracer;
+import org.opensearch.telemetry.tracing.channels.TraceableRestChannel;
 import org.opensearch.transport.client.node.NodeClient;
 import org.opensearch.usage.UsageService;
 
@@ -120,12 +135,25 @@ public class RestController implements HttpServerTransport.Dispatcher {
     private final Set<RestHeaderDefinition> headersToCopy;
     private final UsageService usageService;
 
+    private final NamedXContentRegistry xContentRegistry;
+    private final BigArrays bigArrays;
+    private final HttpHandlingSettings handlingSettings;
+    private final CorsHandler corsHandler;
+    private final HttpTracer httpTracer;
+    private final Tracer tracer;
+
     public RestController(
         Set<RestHeaderDefinition> headersToCopy,
         UnaryOperator<RestHandler> handlerWrapper,
         NodeClient client,
         CircuitBreakerService circuitBreakerService,
-        UsageService usageService
+        UsageService usageService,
+        NamedXContentRegistry xContentRegistry,
+        BigArrays bigArrays,
+        HttpHandlingSettings handlingSettings,
+        CorsHandler corsHandler,
+        HttpTracer httpTracer,
+        Tracer tracer
     ) {
         this.headersToCopy = headersToCopy;
         this.usageService = usageService;
@@ -136,6 +164,12 @@ public class RestController implements HttpServerTransport.Dispatcher {
         this.handlerWrapper = handlerWrapper;
         this.client = client;
         this.circuitBreakerService = circuitBreakerService;
+        this.xContentRegistry = xContentRegistry;
+        this.bigArrays = bigArrays;
+        this.handlingSettings = handlingSettings;
+        this.corsHandler = corsHandler;
+        this.httpTracer = httpTracer;
+        this.tracer = tracer;
         registerHandlerNoWrap(
             HttpRequest.Method.GET,
             "/favicon.ico",
@@ -256,21 +290,154 @@ public class RestController implements HttpServerTransport.Dispatcher {
     }
 
     @Override
-    public void dispatchRequest(RestRequest request, RestChannel channel, ThreadContext threadContext) {
-        try {
-            tryAllHandlers(request, channel, threadContext);
-        } catch (Exception e) {
+    public void dispatchRequest(HttpRequest httpRequest, HttpChannel httpChannel, ThreadContext threadContext) {
+        dispatchHttpRequest(httpRequest, httpChannel, threadContext, null);
+    }
+
+    @Override
+    public void dispatchBadRequest(HttpRequest httpRequest, HttpChannel httpChannel, ThreadContext threadContext, Throwable cause) {
+        final Exception e;
+        if (cause == null) {
+            e = new OpenSearchException("unknown cause");
+        } else if (cause instanceof Exception) {
+            e = (Exception) cause;
+        } else {
+            e = new OpenSearchException(cause);
+        }
+        dispatchHttpRequest(httpRequest, httpChannel, threadContext, e);
+    }
+
+    private void dispatchHttpRequest(
+        final HttpRequest httpRequest,
+        final HttpChannel httpChannel,
+        final ThreadContext threadContext,
+        final Exception initialBadRequestCause
+    ) {
+        final Exception originalException = initialBadRequestCause;
+        Exception badRequestCause = initialBadRequestCause;
+
+        /*
+         * We want to create a REST request from the incoming request. However, creating this request could fail if there
+         * are incorrectly encoded parameters, or the Content-Type header is invalid. If one of these specific failures occurs, we
+         * attempt to create a REST request again without the input that caused the exception (e.g., we remove the Content-Type header,
+         * or skip decoding the parameters). Once we have a request in hand, we then dispatch the request as a bad request with the
+         * underlying exception that caused us to treat the request as bad.
+         */
+        final RestRequest restRequest;
+        {
+            RestRequest innerRestRequest;
             try {
-                channel.sendResponse(new BytesRestResponse(channel, e));
-            } catch (Exception inner) {
-                inner.addSuppressed(e);
-                logger.error(() -> new ParameterizedMessage("failed to send failure response for uri [{}]", request.uri()), inner);
+                innerRestRequest = RestRequest.request(xContentRegistry, httpRequest, httpChannel);
+            } catch (final RestRequest.ContentTypeHeaderException e) {
+                badRequestCause = ExceptionsHelper.useOrSuppress(badRequestCause, e);
+                innerRestRequest = requestWithoutContentTypeHeader(httpRequest, httpChannel, badRequestCause);
+            } catch (final RestRequest.BadParameterException e) {
+                badRequestCause = ExceptionsHelper.useOrSuppress(badRequestCause, e);
+                innerRestRequest = RestRequest.requestWithoutParameters(xContentRegistry, httpRequest, httpChannel);
+            }
+            restRequest = innerRestRequest;
+        }
+
+        final HttpTracer trace = httpTracer.maybeTraceRequest(restRequest, originalException);
+
+        /*
+         * We now want to create a channel used to send the response on. However, creating this channel can fail if there are invalid
+         * parameter values for any of the filter_path, human, or pretty parameters. We detect these specific failures via an
+         * IllegalArgumentException from the channel constructor and then attempt to create a new channel that bypasses parsing of these
+         * parameter values.
+         */
+        final RestChannel channel;
+        {
+            RestChannel innerChannel;
+            try {
+                if (httpChannel instanceof StreamingHttpChannel) {
+                    innerChannel = new DefaultStreamingRestChannel(
+                        (StreamingHttpChannel) httpChannel,
+                        httpRequest,
+                        restRequest,
+                        bigArrays,
+                        handlingSettings,
+                        threadContext,
+                        corsHandler,
+                        trace
+                    );
+                } else {
+                    innerChannel = new DefaultRestChannel(
+                        httpChannel,
+                        httpRequest,
+                        restRequest,
+                        bigArrays,
+                        handlingSettings,
+                        threadContext,
+                        corsHandler,
+                        trace
+                    );
+                }
+            } catch (final IllegalArgumentException e) {
+                badRequestCause = ExceptionsHelper.useOrSuppress(badRequestCause, e);
+                final RestRequest innerRequest = RestRequest.requestWithoutParameters(xContentRegistry, httpRequest, httpChannel);
+
+                if (httpChannel instanceof StreamingHttpChannel) {
+                    innerChannel = new DefaultStreamingRestChannel(
+                        (StreamingHttpChannel) httpChannel,
+                        httpRequest,
+                        innerRequest,
+                        bigArrays,
+                        handlingSettings,
+                        threadContext,
+                        corsHandler,
+                        trace
+                    );
+                } else {
+                    innerChannel = new DefaultRestChannel(
+                        httpChannel,
+                        httpRequest,
+                        innerRequest,
+                        bigArrays,
+                        handlingSettings,
+                        threadContext,
+                        corsHandler,
+                        trace
+                    );
+                }
+            }
+            channel = innerChannel;
+        }
+
+        final Span span = tracer.startSpan(SpanBuilder.from(restRequest));
+        try (final SpanScope spanScope = tracer.withSpanInScope(span)) {
+            final RestChannel traceableChannel = TraceableRestChannel.create(channel, span, tracer);
+            if (badRequestCause != null) {
+                sendBadRequestResponse(traceableChannel, threadContext, badRequestCause);
+            } else {
+                try {
+                    tryAllHandlers(restRequest, traceableChannel, threadContext);
+                } catch (Exception e) {
+                    try {
+                        traceableChannel.sendResponse(new BytesRestResponse(traceableChannel, e));
+                    } catch (Exception inner) {
+                        inner.addSuppressed(e);
+                        logger.error(
+                            () -> new ParameterizedMessage("failed to send failure response for uri [{}]", restRequest.uri()),
+                            inner
+                        );
+                    }
+                }
             }
         }
     }
 
-    @Override
-    public void dispatchBadRequest(final RestChannel channel, final ThreadContext threadContext, final Throwable cause) {
+    private RestRequest requestWithoutContentTypeHeader(HttpRequest httpRequest, HttpChannel httpChannel, Exception badRequestCause) {
+        HttpRequest httpRequestWithoutContentType = httpRequest.removeHeader("Content-Type");
+        try {
+            return RestRequest.request(xContentRegistry, httpRequestWithoutContentType, httpChannel);
+        } catch (final RestRequest.BadParameterException e) {
+            badRequestCause.addSuppressed(e);
+            return RestRequest.requestWithoutParameters(xContentRegistry, httpRequestWithoutContentType, httpChannel);
+        }
+    }
+
+    private void sendBadRequestResponse(final RestChannel channel, final ThreadContext threadContext, final Throwable cause) {
         try {
             final Exception e;
             if (cause == null) {

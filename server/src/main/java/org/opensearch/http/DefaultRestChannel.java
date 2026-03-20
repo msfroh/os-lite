@@ -62,7 +62,7 @@ import static org.opensearch.tasks.Task.X_OPAQUE_ID;
  *
  * @opensearch.internal
  */
-class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
+public class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
 
     static final String CLOSE = "close";
     static final String CONNECTION = "connection";
@@ -88,7 +88,7 @@ class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
     @Nullable
     private final HttpTracer tracerLog;
 
-    DefaultRestChannel(
+    public DefaultRestChannel(
         HttpChannel httpChannel,
         HttpRequest httpRequest,
         RestRequest request,

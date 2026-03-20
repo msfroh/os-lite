@@ -32,29 +32,15 @@
 
 package org.opensearch.action;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.opensearch.action.support.ActionFilters;
 import org.opensearch.action.support.TransportAction;
-import org.opensearch.cluster.node.DiscoveryNodes;
 import org.opensearch.common.NamedRegistry;
 import org.opensearch.common.annotation.PublicApi;
 import org.opensearch.common.inject.AbstractModule;
 import org.opensearch.common.inject.multibindings.MapBinder;
-import org.opensearch.common.settings.ClusterSettings;
-import org.opensearch.common.settings.Settings;
-import org.opensearch.common.settings.SettingsFilter;
 import org.opensearch.core.action.ActionResponse;
-import org.opensearch.core.indices.breaker.CircuitBreakerService;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.ActionPlugin.ActionHandler;
-import org.opensearch.rest.RestController;
-import org.opensearch.rest.RestHandler;
-import org.opensearch.rest.RestHeaderDefinition;
-import org.opensearch.tasks.Task;
-import org.opensearch.threadpool.ThreadPool;
-import org.opensearch.transport.client.node.NodeClient;
-import org.opensearch.usage.UsageService;
 
 import java.util.Collections;
 import java.util.List;
@@ -62,11 +48,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.Collections.unmodifiableMap;
 
@@ -77,12 +59,6 @@ import static java.util.Collections.unmodifiableMap;
  */
 public class ActionModule extends AbstractModule {
 
-    private static final Logger logger = LogManager.getLogger(ActionModule.class);
-
-    private final Settings settings;
-    private final ClusterSettings clusterSettings;
-    private final SettingsFilter settingsFilter;
-    private final List<ActionPlugin> actionPlugins;
     // The unmodifiable map containing OpenSearch and Plugin actions
     // This is initialized at node bootstrap and contains same-JVM actions
     // It will be wrapped in the Dynamic Action Registry but otherwise
@@ -95,43 +71,11 @@ public class ActionModule extends AbstractModule {
     // a different JVM and possibly on a different server.
     private final DynamicActionRegistry dynamicActionRegistry;
     private final ActionFilters actionFilters;
-    private final RestController restController;
-    private final ThreadPool threadPool;
 
-    public ActionModule(
-        Settings settings,
-        ClusterSettings clusterSettings,
-        SettingsFilter settingsFilter,
-        ThreadPool threadPool,
-        List<ActionPlugin> actionPlugins,
-        NodeClient nodeClient,
-        CircuitBreakerService circuitBreakerService,
-        UsageService usageService
-    ) {
-        this.settings = settings;
-        this.clusterSettings = clusterSettings;
-        this.settingsFilter = settingsFilter;
-        this.actionPlugins = actionPlugins;
-        this.threadPool = threadPool;
+    public ActionModule(List<ActionPlugin> actionPlugins) {
         actions = setupActions(actionPlugins);
         actionFilters = setupActionFilters(actionPlugins);
         dynamicActionRegistry = new DynamicActionRegistry();
-        Set<RestHeaderDefinition> headers = Stream.concat(
-            actionPlugins.stream().flatMap(p -> p.getRestHeaders().stream()),
-            Stream.of(new RestHeaderDefinition(Task.X_OPAQUE_ID, false))
-        ).collect(Collectors.toSet());
-        UnaryOperator<RestHandler> restWrapper = null;
-        for (ActionPlugin plugin : actionPlugins) {
-            UnaryOperator<RestHandler> newRestWrapper = plugin.getRestHandlerWrapper(threadPool.getThreadContext(), headers);
-            if (newRestWrapper != null) {
-                logger.debug("Using REST wrapper from plugin " + plugin.getClass().getName());
-                if (restWrapper != null) {
-                    throw new IllegalArgumentException("Cannot have more than one plugin implementing a REST wrapper");
-                }
-                restWrapper = newRestWrapper;
-            }
-        }
-        restController = new RestController(headers, restWrapper, nodeClient, circuitBreakerService, usageService);
     }
 
     public Map<String, ActionHandler<?, ?>> getActions() {
@@ -168,13 +112,12 @@ public class ActionModule extends AbstractModule {
         );
     }
 
-    public void initRestHandlers(Supplier<DiscoveryNodes> nodesInCluster) {
-        Consumer<RestHandler> registerHandler = handler -> { restController.registerHandler(handler); };
-        for (ActionPlugin plugin : actionPlugins) {
-            for (RestHandler handler : plugin.getRestHandlers(settings, restController, clusterSettings, settingsFilter, nodesInCluster)) {
-                registerHandler.accept(handler);
-            }
-        }
+    public ActionFilters getActionFilters() {
+        return actionFilters;
+    }
+
+    public DynamicActionRegistry getDynamicActionRegistry() {
+        return dynamicActionRegistry;
     }
 
     @Override
@@ -199,18 +142,6 @@ public class ActionModule extends AbstractModule {
 
         // register dynamic ActionType -> transportAction Map used by NodeClient
         bind(DynamicActionRegistry.class).toInstance(dynamicActionRegistry);
-    }
-
-    public ActionFilters getActionFilters() {
-        return actionFilters;
-    }
-
-    public DynamicActionRegistry getDynamicActionRegistry() {
-        return dynamicActionRegistry;
-    }
-
-    public RestController getRestController() {
-        return restController;
     }
 
     /**
