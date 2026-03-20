@@ -66,18 +66,6 @@ public interface HttpServerTransport extends LifecycleComponent, ReportingServic
      */
     interface Dispatcher {
         /**
-         * Finds the matching {@link RestHandler} that the request is going to be dispatched to, if any.
-         * @param uri request URI
-         * @param rawPath request raw path
-         * @param method request HTTP method
-         * @param params request parameters
-         * @return matching {@link RestHandler} that the request is going to be dispatched to, {@code Optional.empty()} if none match
-         */
-        default Optional<RestHandler> dispatchHandler(String uri, String rawPath, RestRequest.Method method, Map<String, String> params) {
-            return Optional.empty();
-        }
-
-        /**
          * Dispatches the {@link RestRequest} to the relevant request handler or responds to the given rest channel directly if
          * the request can't be handled by any request handler.
          *
@@ -98,4 +86,14 @@ public interface HttpServerTransport extends LifecycleComponent, ReportingServic
         void dispatchBadRequest(RestChannel channel, ThreadContext threadContext, Throwable cause);
 
     }
+
+    Dispatcher NO_OP_DISPATCHER = new Dispatcher() {
+        @Override
+        public void dispatchRequest(RestRequest request, RestChannel channel, ThreadContext threadContext) {
+        }
+
+        @Override
+        public void dispatchBadRequest(RestChannel channel, ThreadContext threadContext, Throwable cause) {
+        }
+    };
 }

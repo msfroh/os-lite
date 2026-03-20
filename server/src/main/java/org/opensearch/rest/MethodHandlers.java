@@ -9,6 +9,7 @@
 package org.opensearch.rest;
 
 import org.opensearch.common.annotation.PublicApi;
+import org.opensearch.http.HttpRequest;
 
 import java.util.Set;
 
@@ -20,7 +21,7 @@ public interface MethodHandlers {
     /**
      * Return a set of all valid HTTP methods for the particular path.
      */
-    Set<RestRequest.Method> getValidMethods();
+    Set<HttpRequest.Method> getValidMethods();
 
     /**
      * Returns the relative HTTP path of the set of method handlers.

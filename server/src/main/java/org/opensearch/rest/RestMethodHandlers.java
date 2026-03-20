@@ -33,6 +33,7 @@
 package org.opensearch.rest;
 
 import org.opensearch.common.Nullable;
+import org.opensearch.http.HttpRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -44,12 +45,12 @@ import java.util.Set;
 final class RestMethodHandlers implements MethodHandlers {
 
     private final String path;
-    private final Map<RestRequest.Method, RestHandler> methodHandlers;
+    private final Map<HttpRequest.Method, RestHandler> methodHandlers;
 
-    RestMethodHandlers(String path, RestHandler handler, RestRequest.Method... methods) {
+    RestMethodHandlers(String path, RestHandler handler, HttpRequest.Method... methods) {
         this.path = path;
         this.methodHandlers = new HashMap<>(methods.length);
-        for (RestRequest.Method method : methods) {
+        for (HttpRequest.Method method : methods) {
             methodHandlers.put(method, handler);
         }
     }
@@ -58,8 +59,8 @@ final class RestMethodHandlers implements MethodHandlers {
      * Add a handler for an additional array of methods. Note that {@code MethodHandlers}
      * does not allow replacing the handler for an already existing method.
      */
-    public RestMethodHandlers addMethods(RestHandler handler, RestRequest.Method... methods) {
-        for (RestRequest.Method method : methods) {
+    public RestMethodHandlers addMethods(RestHandler handler, HttpRequest.Method... methods) {
+        for (HttpRequest.Method method : methods) {
             RestHandler existing = methodHandlers.putIfAbsent(method, handler);
             if (existing != null) {
                 throw new IllegalArgumentException("Cannot replace existing handler for [" + path + "] for method: " + method);
@@ -72,14 +73,14 @@ final class RestMethodHandlers implements MethodHandlers {
      * Returns the handler for the given method or {@code null} if none exists.
      */
     @Nullable
-    public RestHandler getHandler(RestRequest.Method method) {
+    public RestHandler getHandler(HttpRequest.Method method) {
         return methodHandlers.get(method);
     }
 
     /**
      * Return a set of all valid HTTP methods for the particular path.
      */
-    public Set<RestRequest.Method> getValidMethods() {
+    public Set<HttpRequest.Method> getValidMethods() {
         return methodHandlers.keySet();
     }
 

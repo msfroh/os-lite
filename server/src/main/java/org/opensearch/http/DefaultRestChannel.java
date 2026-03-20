@@ -134,7 +134,7 @@ class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
 
             BytesReference finalContent = content;
             try {
-                if (request.method() == RestRequest.Method.HEAD) {
+                if (request.method() == HttpRequest.Method.HEAD) {
                     finalContent = BytesArray.EMPTY;
                 }
             } catch (IllegalArgumentException ignored) {

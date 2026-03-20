@@ -13,6 +13,7 @@ import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.helloworld.action.HelloWorldAction;
 import org.opensearch.helloworld.action.HelloWorldRequest;
 import org.opensearch.helloworld.action.HelloWorldResponse;
+import org.opensearch.http.HttpRequest;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
@@ -45,6 +46,6 @@ public class RestHelloWorldAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(new Route(RestRequest.Method.GET, "/"));
+        return List.of(new Route(HttpRequest.Method.GET, "/"));
     }
 }

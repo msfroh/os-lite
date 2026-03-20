@@ -51,6 +51,7 @@ import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.http.HttpChannel;
 import org.opensearch.http.HttpRequest;
+import org.opensearch.http.UrlUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -187,7 +188,7 @@ public class RestRequest implements ToXContent.Params {
         int index = uri.indexOf('?');
         if (index >= 0) {
             try {
-                RestUtils.decodeQueryString(uri, index + 1, params);
+                UrlUtils.decodeQueryString(uri, index + 1, params);
             } catch (final IllegalArgumentException e) {
                 throw new BadParameterException(e);
             }
@@ -231,30 +232,12 @@ public class RestRequest implements ToXContent.Params {
     }
 
     /**
-     * The method used.
-     *
-     * @opensearch.api
-     */
-    @PublicApi(since = "1.0.0")
-    public enum Method {
-        GET,
-        POST,
-        PUT,
-        DELETE,
-        OPTIONS,
-        HEAD,
-        PATCH,
-        TRACE,
-        CONNECT
-    }
-
-    /**
      * Returns the HTTP method used in the REST request.
      *
-     * @return the {@link Method} used in the REST request
+     * @return the {@link HttpRequest.Method} used in the REST request
      * @throws IllegalArgumentException if the HTTP method is invalid
      */
-    public Method method() {
+    public HttpRequest.Method method() {
         return httpRequest.method();
     }
 
@@ -276,7 +259,7 @@ public class RestRequest implements ToXContent.Params {
      * The path part of the URI (without the query string), decoded.
      */
     public final String path() {
-        return RestUtils.decodeComponent(rawPath());
+        return UrlUtils.decodeComponent(rawPath());
     }
 
     public boolean hasContent() {

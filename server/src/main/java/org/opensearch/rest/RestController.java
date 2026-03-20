@@ -53,7 +53,9 @@ import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.MediaTypeRegistry;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.http.HttpChunk;
+import org.opensearch.http.HttpRequest;
 import org.opensearch.http.HttpServerTransport;
+import org.opensearch.http.UrlUtils;
 import org.opensearch.transport.client.node.NodeClient;
 import org.opensearch.usage.UsageService;
 
@@ -67,7 +69,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -107,7 +108,7 @@ public class RestController implements HttpServerTransport.Dispatcher {
         }
     }
 
-    private final PathTrie<RestMethodHandlers> handlers = new PathTrie<>(RestUtils.REST_DECODER);
+    private final PathTrie<RestMethodHandlers> handlers = new PathTrie<>(UrlUtils.REST_DECODER);
 
     private final UnaryOperator<RestHandler> handlerWrapper;
 
@@ -136,7 +137,7 @@ public class RestController implements HttpServerTransport.Dispatcher {
         this.client = client;
         this.circuitBreakerService = circuitBreakerService;
         registerHandlerNoWrap(
-            RestRequest.Method.GET,
+            HttpRequest.Method.GET,
             "/favicon.ico",
             (request, channel, clnt) -> channel.sendResponse(new BytesRestResponse(RestStatus.OK, "image/x-icon", FAVICON_RESPONSE))
         );
@@ -160,7 +161,7 @@ public class RestController implements HttpServerTransport.Dispatcher {
      * @param handler The handler to actually execute
      * @param deprecationMessage The message to log and send as a header in the response
      */
-    protected void registerAsDeprecatedHandler(RestRequest.Method method, String path, RestHandler handler, String deprecationMessage) {
+    protected void registerAsDeprecatedHandler(HttpRequest.Method method, String path, RestHandler handler, String deprecationMessage) {
         assert (handler instanceof DeprecationRestHandler) == false;
 
         registerHandler(method, path, new DeprecationRestHandler(handler, deprecationMessage, deprecationLogger));
@@ -191,10 +192,10 @@ public class RestController implements HttpServerTransport.Dispatcher {
      * @param deprecatedPath <em>Deprecated</em> path to handle (e.g., "/_optimize")
      */
     protected void registerWithDeprecatedHandler(
-        RestRequest.Method method,
+        HttpRequest.Method method,
         String path,
         RestHandler handler,
-        RestRequest.Method deprecatedMethod,
+        HttpRequest.Method deprecatedMethod,
         String deprecatedPath
     ) {
         // e.g., [POST /_optimize] is deprecated! Use [POST /_forcemerge] instead.
@@ -219,14 +220,14 @@ public class RestController implements HttpServerTransport.Dispatcher {
      * @param handler The handler to actually execute
      * @param method GET, POST, etc.
      */
-    protected void registerHandler(RestRequest.Method method, String path, RestHandler handler) {
+    protected void registerHandler(HttpRequest.Method method, String path, RestHandler handler) {
         if (handler instanceof BaseRestHandler) {
             usageService.addRestHandler((BaseRestHandler) handler);
         }
         registerHandlerNoWrap(method, path, handlerWrapper.apply(handler));
     }
 
-    private void registerHandlerNoWrap(RestRequest.Method method, String path, RestHandler maybeWrappedHandler) {
+    private void registerHandlerNoWrap(HttpRequest.Method method, String path, RestHandler maybeWrappedHandler) {
         handlers.insertOrUpdate(
             path,
             new RestMethodHandlers(path, maybeWrappedHandler, method),
@@ -252,32 +253,6 @@ public class RestController implements HttpServerTransport.Dispatcher {
                     route.getDeprecatedPath()
                 )
             );
-    }
-
-    @Override
-    public Optional<RestHandler> dispatchHandler(String uri, String rawPath, RestRequest.Method method, Map<String, String> params) {
-        // Loop through all possible handlers, attempting to dispatch the request
-        final Iterator<RestMethodHandlers> allHandlers = getAllRestMethodHandlers(params, rawPath);
-
-        while (allHandlers.hasNext()) {
-            final RestHandler handler;
-            final RestMethodHandlers handlers = allHandlers.next();
-            if (handlers == null) {
-                handler = null;
-            } else {
-                handler = handlers.getHandler(method);
-            }
-            if (handler == null) {
-                final Set<RestRequest.Method> validMethodSet = getValidHandlerMethodSet(rawPath);
-                if (validMethodSet.contains(method) == false) {
-                    return Optional.empty();
-                }
-            } else {
-                return Optional.of(handler);
-            }
-        }
-
-        return Optional.empty();
     }
 
     @Override
@@ -383,11 +358,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
         }
     }
 
-    private boolean handleNoHandlerFound(String rawPath, RestRequest.Method method, String uri, RestChannel channel) {
+    private boolean handleNoHandlerFound(String rawPath, HttpRequest.Method method, String uri, RestChannel channel) {
         // Get the map of matching handlers for a request, for the full set of HTTP methods.
-        final Set<RestRequest.Method> validMethodSet = getValidHandlerMethodSet(rawPath);
+        final Set<HttpRequest.Method> validMethodSet = getValidHandlerMethodSet(rawPath);
         if (validMethodSet.contains(method) == false) {
-            if (method == RestRequest.Method.OPTIONS) {
+            if (method == HttpRequest.Method.OPTIONS) {
                 handleOptionsRequest(channel, validMethodSet);
                 return true;
             }
@@ -444,7 +419,7 @@ public class RestController implements HttpServerTransport.Dispatcher {
 
         final String rawPath = request.rawPath();
         final String uri = request.uri();
-        final RestRequest.Method requestMethod;
+        final HttpRequest.Method requestMethod;
         try {
             // Resolves the HTTP method and fails if the method is invalid
             requestMethod = request.method();
@@ -505,9 +480,9 @@ public class RestController implements HttpServerTransport.Dispatcher {
      */
     private void handleUnsupportedHttpMethod(
         String uri,
-        @Nullable RestRequest.Method method,
+        @Nullable HttpRequest.Method method,
         final RestChannel channel,
-        final Set<RestRequest.Method> validMethodSet,
+        final Set<HttpRequest.Method> validMethodSet,
         @Nullable final IllegalArgumentException exception
     ) {
         try {
@@ -541,7 +516,7 @@ public class RestController implements HttpServerTransport.Dispatcher {
      * <a href="https://tools.ietf.org/html/rfc2616#section-9.2">HTTP/1.1 - 9.2
      * - Options</a>).
      */
-    private void handleOptionsRequest(RestChannel channel, Set<RestRequest.Method> validMethodSet) {
+    private void handleOptionsRequest(RestChannel channel, Set<HttpRequest.Method> validMethodSet) {
         BytesRestResponse bytesRestResponse = new BytesRestResponse(OK, TEXT_CONTENT_TYPE, BytesArray.EMPTY);
         // When we have an OPTIONS HTTP request and no valid handlers, simply send OK by default (with the Access Control Origin header
         // which gets automatically added).
@@ -555,7 +530,7 @@ public class RestController implements HttpServerTransport.Dispatcher {
      * Handle a requests with no candidate handlers (return a 400 Bad Request
      * error).
      */
-    private void handleBadRequest(String uri, RestRequest.Method method, RestChannel channel) throws IOException {
+    private void handleBadRequest(String uri, HttpRequest.Method method, RestChannel channel) throws IOException {
         try (XContentBuilder builder = channel.newErrorBuilder()) {
             builder.startObject();
             {
@@ -576,8 +551,8 @@ public class RestController implements HttpServerTransport.Dispatcher {
     /**
      * Get the valid set of HTTP methods for a REST request.
      */
-    private Set<RestRequest.Method> getValidHandlerMethodSet(String rawPath) {
-        Set<RestRequest.Method> validMethods = new HashSet<>();
+    private Set<HttpRequest.Method> getValidHandlerMethodSet(String rawPath) {
+        Set<HttpRequest.Method> validMethods = new HashSet<>();
         Iterator<RestMethodHandlers> allHandlers = getAllRestMethodHandlers(null, rawPath);
         while (allHandlers.hasNext()) {
             final MethodHandlers methodHandlers = allHandlers.next();
