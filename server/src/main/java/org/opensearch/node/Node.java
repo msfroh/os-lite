@@ -304,7 +304,6 @@ public class Node implements Closeable {
                 namedWriteableRegistry,
                 xContentRegistry,
                 networkService,
-                HttpServerTransport.NO_OP_DISPATCHER,
                 settingsModule.getClusterSettings(),
                 tracer,
                 Collections.emptyList(),

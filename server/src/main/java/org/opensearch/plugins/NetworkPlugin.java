@@ -51,6 +51,7 @@ import org.opensearch.transport.TransportInterceptor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -59,6 +60,15 @@ import java.util.function.Supplier;
  * @opensearch.api
  */
 public interface NetworkPlugin {
+    /**
+     * Returns a {@link HttpServerTransport.Dispatcher} to handle incoming HTTP requests.
+     * Only one plugin may provide a dispatcher. If no plugin provides one, the node will use
+     * {@link HttpServerTransport#NO_OP_DISPATCHER}.
+     */
+    default Optional<HttpServerTransport.Dispatcher> getHttpServerTransportDispatcher() {
+        return Optional.empty();
+    }
+
     /**
      * Auxiliary transports are optional and run in parallel to the default HttpServerTransport.
      * Returns a map of AuxTransport suppliers.

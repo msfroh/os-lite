@@ -56,23 +56,18 @@ import org.opensearch.core.xcontent.MediaTypeRegistry;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.http.CorsHandler;
-import org.opensearch.http.DefaultRestChannel;
-import org.opensearch.http.DefaultStreamingRestChannel;
 import org.opensearch.http.HttpChannel;
 import org.opensearch.http.HttpChunk;
 import org.opensearch.http.HttpHandlingSettings;
 import org.opensearch.http.HttpRequest;
 import org.opensearch.http.HttpServerTransport;
-import org.opensearch.http.HttpTracer;
 import org.opensearch.http.StreamingHttpChannel;
 import org.opensearch.http.UrlUtils;
 import org.opensearch.telemetry.tracing.Span;
 import org.opensearch.telemetry.tracing.SpanBuilder;
 import org.opensearch.telemetry.tracing.SpanScope;
 import org.opensearch.telemetry.tracing.Tracer;
-import org.opensearch.telemetry.tracing.channels.TraceableRestChannel;
 import org.opensearch.transport.client.node.NodeClient;
-import org.opensearch.usage.UsageService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -133,13 +128,12 @@ public class RestController implements HttpServerTransport.Dispatcher {
 
     /** Rest headers that are copied to internal requests made during a rest request. */
     private final Set<RestHeaderDefinition> headersToCopy;
-    private final UsageService usageService;
 
     private final NamedXContentRegistry xContentRegistry;
     private final BigArrays bigArrays;
     private final HttpHandlingSettings handlingSettings;
     private final CorsHandler corsHandler;
-    private final HttpTracer httpTracer;
+    private final RestTracer httpTracer;
     private final Tracer tracer;
 
     public RestController(
@@ -147,16 +141,14 @@ public class RestController implements HttpServerTransport.Dispatcher {
         UnaryOperator<RestHandler> handlerWrapper,
         NodeClient client,
         CircuitBreakerService circuitBreakerService,
-        UsageService usageService,
         NamedXContentRegistry xContentRegistry,
         BigArrays bigArrays,
         HttpHandlingSettings handlingSettings,
         CorsHandler corsHandler,
-        HttpTracer httpTracer,
+        RestTracer httpTracer,
         Tracer tracer
     ) {
         this.headersToCopy = headersToCopy;
-        this.usageService = usageService;
         if (handlerWrapper == null) {
             handlerWrapper = h -> h; // passthrough if no wrapper set
         }
@@ -255,9 +247,6 @@ public class RestController implements HttpServerTransport.Dispatcher {
      * @param method GET, POST, etc.
      */
     protected void registerHandler(HttpRequest.Method method, String path, RestHandler handler) {
-        if (handler instanceof BaseRestHandler) {
-            usageService.addRestHandler((BaseRestHandler) handler);
-        }
         registerHandlerNoWrap(method, path, handlerWrapper.apply(handler));
     }
 
@@ -338,7 +327,7 @@ public class RestController implements HttpServerTransport.Dispatcher {
             restRequest = innerRestRequest;
         }
 
-        final HttpTracer trace = httpTracer.maybeTraceRequest(restRequest, originalException);
+        final RestTracer trace = httpTracer.maybeTraceRequest(restRequest, originalException);
 
         /*
          * We now want to create a channel used to send the response on. However, creating this channel can fail if there are invalid
@@ -404,7 +393,7 @@ public class RestController implements HttpServerTransport.Dispatcher {
             channel = innerChannel;
         }
 
-        final Span span = tracer.startSpan(SpanBuilder.from(restRequest));
+        final Span span = tracer.startSpan(SpanBuilder.from(restRequest.getHttpRequest()));
         try (final SpanScope spanScope = tracer.withSpanInScope(span)) {
             final RestChannel traceableChannel = TraceableRestChannel.create(channel, span, tracer);
             if (badRequestCause != null) {

@@ -30,7 +30,7 @@
  * GitHub history for details.
  */
 
-package org.opensearch.http;
+package org.opensearch.rest;
 
 import org.opensearch.Build;
 import org.opensearch.common.Nullable;
@@ -45,10 +45,12 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
-import org.opensearch.rest.AbstractRestChannel;
-import org.opensearch.rest.RestChannel;
-import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.RestResponse;
+import org.opensearch.http.CorsHandler;
+import org.opensearch.http.HttpChannel;
+import org.opensearch.http.HttpHandlingSettings;
+import org.opensearch.http.HttpRequest;
+import org.opensearch.http.HttpResponse;
+import org.opensearch.http.HttpUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,7 +88,7 @@ public class DefaultRestChannel extends AbstractRestChannel implements RestChann
     private final Map<String, List<String>> SERVER_VERSION_HEADER = Map.of(SERVER_VERSION, List.of(SERVER_VERSION_VALUE));
 
     @Nullable
-    private final HttpTracer tracerLog;
+    private final RestTracer tracerLog;
 
     public DefaultRestChannel(
         HttpChannel httpChannel,
@@ -96,7 +98,7 @@ public class DefaultRestChannel extends AbstractRestChannel implements RestChann
         HttpHandlingSettings settings,
         ThreadContext threadContext,
         CorsHandler corsHandler,
-        @Nullable HttpTracer tracerLog
+        @Nullable RestTracer tracerLog
     ) {
         super(request, settings.getDetailedErrorsEnabled());
         this.httpChannel = httpChannel;

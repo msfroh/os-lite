@@ -6,14 +6,11 @@
  * compatible open source license.
  */
 
-package org.opensearch.telemetry.tracing.channels;
+package org.opensearch.rest;
 
 import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.rest.RestChannel;
-import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.RestResponse;
 import org.opensearch.telemetry.tracing.Span;
 import org.opensearch.telemetry.tracing.SpanScope;
 import org.opensearch.telemetry.tracing.Tracer;

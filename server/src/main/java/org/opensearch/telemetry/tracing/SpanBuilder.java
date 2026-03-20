@@ -12,7 +12,6 @@ import org.opensearch.common.annotation.InternalApi;
 import org.opensearch.common.collect.Tuple;
 import org.opensearch.core.common.Strings;
 import org.opensearch.http.HttpRequest;
-import org.opensearch.rest.RestRequest;
 import org.opensearch.tasks.Task;
 import org.opensearch.telemetry.tracing.attributes.Attributes;
 import org.opensearch.transport.TcpChannel;
@@ -48,15 +47,6 @@ public final class SpanBuilder {
      */
     public static SpanCreationContext from(HttpRequest request) {
         return SpanCreationContext.server().name(createSpanName(request)).attributes(buildSpanAttributes(request));
-    }
-
-    /**
-     * Creates {@link SpanCreationContext} from the {@link RestRequest}
-     * @param request Rest request
-     * @return context
-     */
-    public static SpanCreationContext from(RestRequest request) {
-        return SpanCreationContext.client().name(createSpanName(request)).attributes(buildSpanAttributes(request));
     }
 
     /**
@@ -109,37 +99,6 @@ public final class SpanBuilder {
                 attributes.addAttribute(x, Strings.collectionToCommaDelimitedString(httpRequest.getHeaders().get(x)));
             }
         });
-    }
-
-    private static String createSpanName(RestRequest restRequest) {
-        String spanName = "rest_request";
-        if (restRequest != null) {
-            try {
-                String methodName = restRequest.method().name();
-                String rawPath = restRequest.rawPath();
-                spanName = methodName + SEPARATOR + rawPath;
-            } catch (Exception e) {
-                // swallow the exception and keep the default name.
-            }
-        }
-        return spanName;
-    }
-
-    private static Attributes buildSpanAttributes(RestRequest restRequest) {
-        if (restRequest != null) {
-            Attributes attributes = Attributes.create()
-                .addAttribute(AttributeNames.REST_REQ_ID, restRequest.getRequestId())
-                .addAttribute(AttributeNames.REST_REQ_RAW_PATH, restRequest.rawPath());
-
-            Tuple<String, String> uriParts = splitUri(restRequest.uri());
-            String query = uriParts.v2();
-            if (query.isBlank() == false) {
-                attributes.addAttribute(AttributeNames.HTTP_REQ_QUERY_PARAMS, query);
-            }
-            return attributes;
-        } else {
-            return Attributes.EMPTY;
-        }
     }
 
     private static String createSpanName(String action, Transport.Connection connection) {

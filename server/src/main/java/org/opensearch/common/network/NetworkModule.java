@@ -151,13 +151,21 @@ public final class NetworkModule {
         NamedWriteableRegistry namedWriteableRegistry,
         NamedXContentRegistry xContentRegistry,
         NetworkService networkService,
-        HttpServerTransport.Dispatcher dispatcher,
         ClusterSettings clusterSettings,
         Tracer tracer,
         List<TransportInterceptor> transportInterceptors,
         Collection<SecureSettingsFactory> secureSettingsFactories
     ) {
         this.settings = settings;
+
+        HttpServerTransport.Dispatcher dispatcher = plugins.stream()
+            .map(NetworkPlugin::getHttpServerTransportDispatcher)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .reduce((a, b) -> {
+                throw new IllegalArgumentException("more than one plugin provided an HTTP dispatcher");
+            })
+            .orElse(HttpServerTransport.NO_OP_DISPATCHER);
 
         final Collection<SecureTransportSettingsProvider> secureTransportSettingsProviders = secureSettingsFactories.stream()
             .map(p -> p.getSecureTransportSettingsProvider(settings))

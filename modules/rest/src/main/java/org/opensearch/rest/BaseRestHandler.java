@@ -43,7 +43,6 @@ import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Setting.Property;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.tasks.Task;
 import org.opensearch.transport.client.node.NodeClient;
 
@@ -65,8 +64,7 @@ import java.util.stream.Collectors;
  * <p>
  * This handler makes sure that the headers &amp; context of the handled {@link RestRequest requests} are copied over to
  * the transport requests executed by the associated client. While the context is fully copied over, not all the headers
- * are copied, but a selected few. It is possible to control what headers are copied over by returning them in
- * {@link ActionPlugin#getRestHeaders()}.
+ * are copied, but a selected few.
  *
  * @opensearch.api
  */
