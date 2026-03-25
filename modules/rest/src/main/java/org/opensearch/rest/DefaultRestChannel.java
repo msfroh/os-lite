@@ -64,7 +64,7 @@ import static org.opensearch.tasks.Task.X_OPAQUE_ID;
  *
  * @opensearch.internal
  */
-public class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
+public class DefaultRestChannel extends AbstractRestChannel implements org.opensearch.rest.spi.RestChannel {
 
     static final String CLOSE = "close";
     static final String CONNECTION = "connection";
@@ -116,7 +116,7 @@ public class DefaultRestChannel extends AbstractRestChannel implements RestChann
     }
 
     @Override
-    public void sendResponse(RestResponse restResponse) {
+    public void sendResponse(org.opensearch.rest.spi.RestResponse restResponse) {
         // We're sending a response so we know we won't be needing the request content again and release it
         Releasables.closeWhileHandlingException(httpRequest::release);
 

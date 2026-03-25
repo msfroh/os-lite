@@ -30,9 +30,8 @@
  * GitHub history for details.
  */
 
-package org.opensearch.rest;
+package org.opensearch.rest.spi;
 
-import org.opensearch.common.annotation.PublicApi;
 import org.opensearch.core.xcontent.XContent;
 import org.opensearch.http.HttpRequest.Method;
 import org.opensearch.transport.client.node.NodeClient;
@@ -47,7 +46,6 @@ import java.util.stream.Collectors;
  *
  * @opensearch.api
  */
-@PublicApi(since = "1.0.0")
 @FunctionalInterface
 public interface RestHandler {
 
@@ -82,9 +80,9 @@ public interface RestHandler {
 
     /**
      * Indicates if the RestHandler supports working with pooled buffers. If the request handler will not escape the return
-     * {@link RestRequest#content()} or any buffers extracted from it then there is no need to make a copies of any pooled buffers in the
+     * RestRequest#content() or any buffers extracted from it then there is no need to make a copies of any pooled buffers in the
      * {@link RestRequest} instance before passing a request to this handler. If this instance does not support pooled/unsafe buffers
-     * {@link RestRequest#ensureSafeBuffers()} should be called on any request before passing it to {@link #handleRequest}.
+     * RestRequest#ensureSafeBuffers() should be called on any request before passing it to {@link #handleRequest}.
      *
      * @return true iff the handler supports requests that make use of pooled buffers
      */
@@ -209,7 +207,6 @@ public interface RestHandler {
      *
      * @opensearch.api
      */
-    @PublicApi(since = "1.0.0")
     class Route {
 
         protected final String path;
@@ -262,7 +259,6 @@ public interface RestHandler {
      *
      * @opensearch.api
      */
-    @PublicApi(since = "1.0.0")
     class DeprecatedRoute extends Route {
 
         private final String deprecationMessage;
@@ -283,7 +279,6 @@ public interface RestHandler {
      *
      * @opensearch.api
      */
-    @PublicApi(since = "1.0.0")
     class ReplacedRoute extends Route {
 
         private final String deprecatedPath;

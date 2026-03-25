@@ -30,7 +30,7 @@
  * GitHub history for details.
  */
 
-package org.opensearch.rest;
+package org.opensearch.rest.spi;
 
 import org.opensearch.OpenSearchException;
 import org.opensearch.common.annotation.PublicApi;
@@ -55,20 +55,10 @@ public abstract class RestResponse {
 
     private Map<String, List<String>> customHeaders;
 
-    /**
-     * The response content type.
-     */
     public abstract String contentType();
 
-    /**
-     * The response content. Note, if the content is {@link Releasable} it
-     * should automatically be released when done by the channel sending it.
-     */
     public abstract BytesReference content();
 
-    /**
-     * The rest status code.
-     */
     public abstract RestStatus status();
 
     public void copyHeaders(OpenSearchException ex) {

@@ -623,80 +623,10 @@ public class PluginsService implements ReportingService<PluginsAndModules> {
     }
 
     private static void loadExtensionsForPlugin(ExtensiblePlugin extensiblePlugin, List<Plugin> extendingPlugins) {
-        ExtensiblePlugin.ExtensionLoader extensionLoader = new ExtensiblePlugin.ExtensionLoader() {
-            @Override
-            public <T> List<T> loadExtensions(Class<T> extensionPointType) {
-                List<T> result = new ArrayList<>();
-                for (Plugin extendingPlugin : extendingPlugins) {
-                    result.addAll(createExtensions(extensionPointType, extendingPlugin));
-                }
-                return Collections.unmodifiableList(result);
-            }
-        };
-
-        extensiblePlugin.loadExtensions(extensionLoader);
-    }
-
-    private static <T> List<? extends T> createExtensions(Class<T> extensionPointType, Plugin plugin) {
-        SPIClassIterator<T> classIterator = SPIClassIterator.get(extensionPointType, plugin.getClass().getClassLoader());
-        List<T> extensions = new ArrayList<>();
-        while (classIterator.hasNext()) {
-            Class<? extends T> extensionClass = classIterator.next();
-            extensions.add(createExtension(extensionClass, extensionPointType, plugin));
+        for (Plugin plugin : extendingPlugins) {
+            logger.info("Passing plugin {} to plugin {}", plugin.getClass(), extensiblePlugin.getClass());
+            extensiblePlugin.accept(plugin);
         }
-        return extensions;
-    }
-
-    // package-private for test visibility
-    static <T> T createExtension(Class<? extends T> extensionClass, Class<T> extensionPointType, Plugin plugin) {
-        // noinspection unchecked
-        Constructor<T>[] constructors = (Constructor<T>[]) extensionClass.getConstructors();
-        if (constructors.length == 0) {
-            throw new IllegalStateException("no public " + extensionConstructorMessage(extensionClass, extensionPointType));
-        }
-
-        if (constructors.length > 1) {
-            throw new IllegalStateException("no unique public " + extensionConstructorMessage(extensionClass, extensionPointType));
-        }
-
-        final Constructor<T> constructor = constructors[0];
-        if (constructor.getParameterCount() > 1) {
-            throw new IllegalStateException(extensionSignatureMessage(extensionClass, extensionPointType, plugin));
-        }
-
-        if (constructor.getParameterCount() == 1 && constructor.getParameterTypes()[0] != plugin.getClass()) {
-            throw new IllegalStateException(
-                extensionSignatureMessage(extensionClass, extensionPointType, plugin)
-                    + ", not ("
-                    + constructor.getParameterTypes()[0].getName()
-                    + ")"
-            );
-        }
-
-        try {
-            if (constructor.getParameterCount() == 0) {
-                return constructor.newInstance();
-            } else {
-                return constructor.newInstance(plugin);
-            }
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(
-                "failed to create extension [" + extensionClass.getName() + "] of type [" + extensionPointType.getName() + "]",
-                e
-            );
-        }
-    }
-
-    private static <T> String extensionSignatureMessage(Class<? extends T> extensionClass, Class<T> extensionPointType, Plugin plugin) {
-        return "signature of "
-            + extensionConstructorMessage(extensionClass, extensionPointType)
-            + " must be either () or ("
-            + plugin.getClass().getName()
-            + ")";
-    }
-
-    private static <T> String extensionConstructorMessage(Class<? extends T> extensionClass, Class<T> extensionPointType) {
-        return "constructor for extension [" + extensionClass.getName() + "] of type [" + extensionPointType.getName() + "]";
     }
 
     // jar-hell check the bundle against the parent classloader and extended plugins

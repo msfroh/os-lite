@@ -65,7 +65,7 @@ public interface NetworkPlugin {
      * Only one plugin may provide a dispatcher. If no plugin provides one, the node will use
      * {@link HttpServerTransport#NO_OP_DISPATCHER}.
      */
-    default Optional<HttpServerTransport.Dispatcher> getHttpServerTransportDispatcher() {
+    default Optional<HttpServerTransport.Dispatcher> getHttpServerTransportDispatcher(BigArrays bigArrays, Settings settings, CircuitBreakerService circuitBreakerService, ClusterSettings clusterSettings, Tracer tracer) {
         return Optional.empty();
     }
 

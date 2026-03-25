@@ -11,6 +11,7 @@ package org.opensearch.rest;
 import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.XContentBuilder;
+import org.opensearch.rest.spi.RestRequest;
 import org.opensearch.telemetry.tracing.Span;
 import org.opensearch.telemetry.tracing.SpanScope;
 import org.opensearch.telemetry.tracing.Tracer;
@@ -19,11 +20,11 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Tracer wrapped {@link RestChannel}
+ * Tracer wrapped {@link org.opensearch.rest.spi.RestChannel}
  */
-public class TraceableRestChannel implements RestChannel {
+public class TraceableRestChannel implements org.opensearch.rest.spi.RestChannel {
 
-    private final RestChannel delegate;
+    private final org.opensearch.rest.spi.RestChannel delegate;
     private final Span span;
 
     private final Tracer tracer;
@@ -35,7 +36,7 @@ public class TraceableRestChannel implements RestChannel {
      * @param span span
      * @param tracer tracer
      */
-    private TraceableRestChannel(RestChannel delegate, Span span, Tracer tracer) {
+    private TraceableRestChannel(org.opensearch.rest.spi.RestChannel delegate, Span span, Tracer tracer) {
         this.span = Objects.requireNonNull(span);
         this.delegate = Objects.requireNonNull(delegate);
         this.tracer = Objects.requireNonNull(tracer);
@@ -48,7 +49,7 @@ public class TraceableRestChannel implements RestChannel {
      * @param tracer tracer
      * @return rest channel
      */
-    public static RestChannel create(RestChannel delegate, Span span, Tracer tracer) {
+    public static org.opensearch.rest.spi.RestChannel create(org.opensearch.rest.spi.RestChannel delegate, Span span, Tracer tracer) {
         if (tracer.isRecording() == true) {
             return new TraceableRestChannel(delegate, span, tracer);
         } else {
@@ -97,7 +98,7 @@ public class TraceableRestChannel implements RestChannel {
     }
 
     @Override
-    public void sendResponse(RestResponse response) {
+    public void sendResponse(org.opensearch.rest.spi.RestResponse response) {
         try (SpanScope scope = tracer.withSpanInScope(span)) {
             delegate.sendResponse(response);
         } finally {

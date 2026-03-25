@@ -11,16 +11,24 @@ package org.opensearch.helloworld;
 import org.opensearch.action.ActionRequest;
 import org.opensearch.core.action.ActionResponse;
 import org.opensearch.helloworld.action.HelloWorldAction;
+import org.opensearch.helloworld.rest.RestHelloWorldAction;
 import org.opensearch.helloworld.transport.HelloWorldTransportAction;
 import org.opensearch.plugins.ActionPlugin;
 import org.opensearch.plugins.Plugin;
+import org.opensearch.rest.spi.RestHandler;
+import org.opensearch.rest.spi.RestHandlerPlugin;
 
 import java.util.List;
 
-public class HelloWorldPlugin extends Plugin implements ActionPlugin {
+public class HelloWorldPlugin extends Plugin implements ActionPlugin, RestHandlerPlugin {
 
     @Override
     public List<ActionHandler<? extends ActionRequest, ? extends ActionResponse>> getActions() {
         return List.of(new ActionHandler<>(HelloWorldAction.INSTANCE, HelloWorldTransportAction.class));
+    }
+
+    @Override
+    public List<RestHandler> getRestHandlers() {
+        return List.of(new RestHelloWorldAction());
     }
 }

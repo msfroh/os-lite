@@ -30,7 +30,7 @@
  * GitHub history for details.
  */
 
-package org.opensearch.rest;
+package org.opensearch.rest.spi;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,9 +41,6 @@ import org.opensearch.common.annotation.PublicApi;
 import org.opensearch.common.collect.Tuple;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Setting.Property;
-import org.opensearch.core.rest.RestStatus;
-import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.tasks.Task;
 import org.opensearch.transport.client.node.NodeClient;
 
 import java.io.IOException;
@@ -62,14 +59,14 @@ import java.util.stream.Collectors;
 /**
  * Base handler for REST requests.
  * <p>
- * This handler makes sure that the headers &amp; context of the handled {@link RestRequest requests} are copied over to
+ * This handler makes sure that the headers &amp; context of the handled {@link org.opensearch.rest.spi.RestRequest requests} are copied over to
  * the transport requests executed by the associated client. While the context is fully copied over, not all the headers
  * are copied, but a selected few.
  *
  * @opensearch.api
  */
 @PublicApi(since = "1.0.0")
-public abstract class BaseRestHandler implements RestHandler {
+public abstract class BaseRestHandler implements org.opensearch.rest.spi.RestHandler {
 
     public static final Setting<Boolean> MULTI_ALLOW_EXPLICIT_INDEX = Setting.boolSetting(
         "rest.action.multi.allow_explicit_index",
@@ -97,7 +94,7 @@ public abstract class BaseRestHandler implements RestHandler {
     public abstract String getName();
 
     @Override
-    public final void handleRequest(RestRequest request, RestChannel channel, NodeClient client) throws Exception {
+    public final void handleRequest(org.opensearch.rest.spi.RestRequest request, org.opensearch.rest.spi.RestChannel channel, NodeClient client) throws Exception {
         // prepare the request for execution; has the side effect of touching the request parameters
         final RestChannelConsumer action = prepareRequest(request, client);
 
@@ -122,7 +119,7 @@ public abstract class BaseRestHandler implements RestHandler {
     }
 
     public static String unrecognizedStrings(
-        final RestRequest request,
+        final org.opensearch.rest.spi.RestRequest request,
         final Set<String> invalids,
         final Set<String> candidates,
         final String detail
@@ -169,7 +166,7 @@ public abstract class BaseRestHandler implements RestHandler {
      * @return a String that contains the message.
      */
     protected final String unrecognized(
-        final RestRequest request,
+        final org.opensearch.rest.spi.RestRequest request,
         final Set<String> invalids,
         final Set<String> candidates,
         final String detail
@@ -185,7 +182,7 @@ public abstract class BaseRestHandler implements RestHandler {
      */
     @FunctionalInterface
     @PublicApi(since = "1.0.0")
-    protected interface RestChannelConsumer extends CheckedConsumer<RestChannel, Exception> {}
+    protected interface RestChannelConsumer extends CheckedConsumer<org.opensearch.rest.spi.RestChannel, Exception> {}
 
     /**
      * Streaming REST requests are handled by preparing a streaming channel consumer that represents the execution of
@@ -195,7 +192,7 @@ public abstract class BaseRestHandler implements RestHandler {
      */
     @FunctionalInterface
     @ExperimentalApi
-    protected interface StreamingRestChannelConsumer extends CheckedConsumer<StreamingRestChannel, Exception> {}
+    protected interface StreamingRestChannelConsumer extends CheckedConsumer<org.opensearch.rest.spi.StreamingRestChannel, Exception> {}
 
     /**
      * Prepare the request for execution. Implementations should consume all request params before
@@ -210,12 +207,12 @@ public abstract class BaseRestHandler implements RestHandler {
      * @throws IOException if an I/O exception occurred parsing the request and preparing for
      *                     execution
      */
-    protected abstract RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException;
+    protected abstract RestChannelConsumer prepareRequest(org.opensearch.rest.spi.RestRequest request, NodeClient client) throws IOException;
 
     /**
      * Parameters used for controlling the response and thus might not be consumed during
      * preparation of the request execution in
-     * {@link BaseRestHandler#prepareRequest(RestRequest, NodeClient)}.
+     * {@link BaseRestHandler#prepareRequest(org.opensearch.rest.spi.RestRequest, NodeClient)}.
      *
      * @return a set of parameters used to control the response and thus should not trip strict
      * URL parameter checks.
@@ -258,7 +255,7 @@ public abstract class BaseRestHandler implements RestHandler {
         }
 
         @Override
-        protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
+        protected RestChannelConsumer prepareRequest(org.opensearch.rest.spi.RestRequest request, NodeClient client) throws IOException {
             return delegate.prepareRequest(request, client);
         }
 
@@ -291,19 +288,5 @@ public abstract class BaseRestHandler implements RestHandler {
         public boolean supportsStreaming() {
             return delegate.supportsStreaming();
         }
-    }
-
-    /**
-     * Return a task immediately when executing some long-running operations asynchronously, like reindex, resize, open, force merge
-     */
-    public RestChannelConsumer sendTask(String nodeId, Task task) {
-        return channel -> {
-            try (XContentBuilder builder = channel.newBuilder()) {
-                builder.startObject();
-                builder.field("task", nodeId + ":" + task.getId());
-                builder.endObject();
-                channel.sendResponse(new BytesRestResponse(RestStatus.OK, builder));
-            }
-        };
     }
 }

@@ -38,7 +38,7 @@ import static org.opensearch.tasks.Task.X_OPAQUE_ID;
  *
  * @opensearch.internal
  */
-public class DefaultStreamingRestChannel extends DefaultRestChannel implements StreamingRestChannel {
+public class DefaultStreamingRestChannel extends DefaultRestChannel implements org.opensearch.rest.spi.StreamingRestChannel {
     private final StreamingHttpChannel streamingHttpChannel;
     @Nullable
     private final RestTracer tracerLog;

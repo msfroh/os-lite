@@ -30,30 +30,44 @@
  * GitHub history for details.
  */
 
-package org.opensearch.rest.action;
+package org.opensearch.rest.spi;
 
-import org.opensearch.rest.RestChannel;
-import org.opensearch.rest.RestResponse;
+import org.opensearch.common.Nullable;
+import org.opensearch.common.io.stream.BytesStreamOutput;
+import org.opensearch.core.xcontent.MediaType;
+import org.opensearch.core.xcontent.XContentBuilder;
+
+import java.io.IOException;
 
 /**
- * A REST enabled action listener that has a basic onFailure implementation, and requires
- * sub classes to only implement {@link #buildResponse(Object)}.
+ * A channel used to construct bytes / builder based outputs, and send responses.
  *
  * @opensearch.api
  */
-public abstract class RestResponseListener<Response> extends RestActionListener<Response> {
+public interface RestChannel {
 
-    protected RestResponseListener(RestChannel channel) {
-        super(channel);
-    }
+    XContentBuilder newBuilder() throws IOException;
 
-    @Override
-    protected final void processResponse(Response response) throws Exception {
-        channel.sendResponse(buildResponse(response));
-    }
+    XContentBuilder newErrorBuilder() throws IOException;
+
+    XContentBuilder newBuilder(@Nullable MediaType mediaType, boolean useFiltering) throws IOException;
+
+    XContentBuilder newBuilder(@Nullable MediaType mediaType, @Nullable MediaType responseContentType, boolean useFiltering)
+        throws IOException;
+
+    BytesStreamOutput bytesOutput();
+
+    RestRequest request();
 
     /**
-     * Builds the response to send back through the channel.
+     * @return true iff an error response should contain additional details like exception traces.
      */
-    public abstract RestResponse buildResponse(Response response) throws Exception;
+    boolean detailedErrorsEnabled();
+
+    /**
+     * @return true if detailed stack traces should be included in the response.
+     */
+    boolean detailedErrorStackTraceEnabled();
+
+    void sendResponse(RestResponse response);
 }

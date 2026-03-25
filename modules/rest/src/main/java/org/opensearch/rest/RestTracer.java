@@ -109,7 +109,7 @@ public class RestTracer {
      * @param success       Whether the response was successfully sent
      */
     void traceResponse(
-        RestResponse restResponse,
+        org.opensearch.rest.spi.RestResponse restResponse,
         HttpChannel httpChannel,
         String contentLength,
         String opaqueHeader,

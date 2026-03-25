@@ -30,7 +30,7 @@
  * GitHub history for details.
  */
 
-package org.opensearch.rest;
+package org.opensearch.rest.spi;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -105,11 +105,11 @@ public class BytesRestResponse extends RestResponse {
         this.contentType = contentType;
     }
 
-    public BytesRestResponse(RestChannel channel, Exception e) throws IOException {
+    public BytesRestResponse(org.opensearch.rest.spi.RestChannel channel, Exception e) throws IOException {
         this(channel, ExceptionsHelper.status(e), e);
     }
 
-    public BytesRestResponse(RestChannel channel, RestStatus status, Exception e) throws IOException {
+    public BytesRestResponse(org.opensearch.rest.spi.RestChannel channel, RestStatus status, Exception e) throws IOException {
         ToXContent.Params params = paramsFromRequest(channel.request());
         if (params.paramAsBoolean(
             OpenSearchException.REST_EXCEPTION_SKIP_STACK_TRACE,
@@ -153,7 +153,7 @@ public class BytesRestResponse extends RestResponse {
         return this.status;
     }
 
-    private ToXContent.Params paramsFromRequest(RestRequest restRequest) {
+    private ToXContent.Params paramsFromRequest(org.opensearch.rest.spi.RestRequest restRequest) {
         ToXContent.Params params = restRequest;
         if (params.paramAsBoolean("error_trace", OpenSearchException.REST_EXCEPTION_SKIP_STACK_TRACE_DEFAULT == false)
             && false == skipStackTrace()) {
@@ -174,7 +174,7 @@ public class BytesRestResponse extends RestResponse {
         builder.endObject();
     }
 
-    static BytesRestResponse createSimpleErrorResponse(RestChannel channel, RestStatus status, String errorMessage) throws IOException {
+    public static BytesRestResponse createSimpleErrorResponse(org.opensearch.rest.spi.RestChannel channel, RestStatus status, String errorMessage) throws IOException {
         return new BytesRestResponse(
             status,
             channel.newErrorBuilder().startObject().field("error", errorMessage).field("status", status.getStatus()).endObject()

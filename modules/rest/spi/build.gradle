@@ -6,9 +6,11 @@
  * compatible open source license.
  */
 
-opensearchplugin {
-    description = 'REST layer plugin providing HTTP request dispatching'
-    classname = 'org.opensearch.rest.RestPlugin'
+apply plugin: 'opensearch.build'
+
+base {
+    group = 'org.opensearch.plugin'
+    archivesName = 'rest-spi'
 }
 
 repositories {
@@ -17,8 +19,9 @@ repositories {
     mavenCentral()
 }
 
-testingConventions.enabled = false
-
 dependencies {
-    api project('spi')
+    compileOnly project(':server')
+    compileOnly "org.opensearch:opensearch-core:${versions.opensearch}"
+    //api "org.opensearch:opensearch-x-content:${versions.opensearch}"
 }
+

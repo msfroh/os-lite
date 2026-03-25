@@ -38,8 +38,6 @@ import org.apache.lucene.util.Constants;
 import org.opensearch.Build;
 import org.opensearch.OpenSearchException;
 import org.opensearch.action.ActionModule;
-import org.opensearch.action.ActionType;
-import org.opensearch.action.support.TransportAction;
 import org.opensearch.bootstrap.BootstrapCheck;
 import org.opensearch.bootstrap.BootstrapContext;
 import org.opensearch.cluster.node.DiscoveryNode;
@@ -81,6 +79,7 @@ import org.opensearch.plugins.CircuitBreakerPlugin;
 import org.opensearch.plugins.NetworkPlugin;
 import org.opensearch.plugins.Plugin;
 import org.opensearch.plugins.PluginInfo;
+import org.opensearch.plugins.PluginResources;
 import org.opensearch.plugins.PluginsService;
 import org.opensearch.plugins.SecureSettingsFactory;
 import org.opensearch.tasks.Task;
@@ -103,7 +102,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -261,9 +259,11 @@ public class Node implements Closeable {
                     .flatMap(Function.identity())
                     .collect(toList())
             );
+
             Collection<Object> pluginComponents = pluginsService.filterPlugins(Plugin.class)
                 .stream()
-                .flatMap(p -> p.createComponents(threadPool, xContentRegistry, environment, namedWriteableRegistry).stream())
+                .flatMap(p -> p.createComponents(new PluginResources(
+                        xContentRegistry, namedWriteableRegistry, environment, threadPool, client)).stream())
                 .toList();
             ModulesBuilder modules = new ModulesBuilder();
             // plugin modules must be added here, before others or we can get crazy injection errors...
@@ -280,12 +280,11 @@ public class Node implements Closeable {
                 settingsModule.getClusterSettings()
             );
             resourcesToClose.add(circuitBreakerService);
+            PageCacheRecycler pageCacheRecycler = createPageCacheRecycler(settings);
+            BigArrays bigArrays = createBigArrays(pageCacheRecycler, circuitBreakerService);
 
             ActionModule actionModule = new ActionModule(pluginsService.filterPlugins(ActionPlugin.class));
             modules.add(actionModule);
-
-            final PageCacheRecycler pageCacheRecycler = createPageCacheRecycler(settings);
-            final BigArrays bigArrays = createBigArrays(pageCacheRecycler, circuitBreakerService);
 
             final Tracer tracer = NoopTracer.INSTANCE;
             final Collection<SecureSettingsFactory> secureSettingsFactories = pluginsService.filterPlugins(Plugin.class)
@@ -353,12 +352,12 @@ public class Node implements Closeable {
                 .map(p -> (LifecycleComponent) p)
                 .collect(Collectors.toList());
             pluginLifecycleComponents.addAll(
-                pluginsService.getGuiceServiceClasses().stream().map(injector::getInstance).collect(Collectors.toList())
+                pluginsService.getGuiceServiceClasses().stream().map(injector::getInstance).toList()
             );
             resourcesToClose.addAll(pluginLifecycleComponents);
             this.pluginLifecycleComponents = Collections.unmodifiableList(pluginLifecycleComponents);
             ActionModule.DynamicActionRegistry dynamicActionRegistry = actionModule.getDynamicActionRegistry();
-            dynamicActionRegistry.registerUnmodifiableActionMap(injector.getInstance(new Key<Map<ActionType, TransportAction>>() {
+            dynamicActionRegistry.registerUnmodifiableActionMap(injector.getInstance(new Key<>() {
             }));
             client.initialize(dynamicActionRegistry, () -> nodeId, namedWriteableRegistry);
             logger.info("initialized");
@@ -371,14 +370,10 @@ public class Node implements Closeable {
         }
     }
 
-    public static final Setting<String> BREAKER_TYPE_KEY = new Setting<>("indices.breaker.type", "hierarchy", (s) -> {
-        switch (s) {
-            case "hierarchy":
-            case "none":
-                return s;
-            default:
+    public static final Setting<String> BREAKER_TYPE_KEY = new Setting<>("indices.breaker.type", "hierarchy", (s) -> switch (s) {
+        case "hierarchy", "none" -> s;
+        default ->
                 throw new IllegalArgumentException("indices.breaker.type must be one of [hierarchy, none] but was: " + s);
-        }
     }, Setting.Property.NodeScope);
 
     /**
@@ -511,7 +506,7 @@ public class Node implements Closeable {
     );
 
     public static String generateNodeId(Settings settings) {
-        Random random = Randomness.get(settings, NODE_ID_SEED_SETTING);
+        Random random = NODE_ID_SEED_SETTING.exists(settings) ? new Random(NODE_ID_SEED_SETTING.get(settings)) : Randomness.get();
         return UUIDs.randomBase64UUID(random);
     }
 

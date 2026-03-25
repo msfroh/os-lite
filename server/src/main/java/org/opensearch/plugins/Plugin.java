@@ -100,17 +100,9 @@ public abstract class Plugin implements Closeable {
      * Any components returned that implement {@link LifecycleComponent} will have their lifecycle managed.
      * Note: To aid in the migration away from guice, all objects returned as components will be bound in guice
      * to themselves.
-     *
-     * @param threadPool A service to allow retrieving an executor to run an async action
-     * @param xContentRegistry the registry for extensible xContent parsing
-     * @param environment the environment for path and setting configurations
-     * @param namedWriteableRegistry the registry for {@link NamedWriteable} object parsing
      */
     public Collection<Object> createComponents(
-        ThreadPool threadPool,
-        NamedXContentRegistry xContentRegistry,
-        Environment environment,
-        NamedWriteableRegistry namedWriteableRegistry
+        PluginResources pluginResources
     ) {
         return Collections.emptyList();
     }

@@ -52,12 +52,12 @@ import static java.util.stream.Collectors.toSet;
  *
  * @opensearch.api
  */
-public abstract class AbstractRestChannel implements RestChannel {
+public abstract class AbstractRestChannel implements org.opensearch.rest.spi.RestChannel {
 
     private static final Predicate<String> INCLUDE_FILTER = f -> f.charAt(0) != '-';
     private static final Predicate<String> EXCLUDE_FILTER = INCLUDE_FILTER.negate();
 
-    protected final RestRequest request;
+    protected final org.opensearch.rest.spi.RestRequest request;
     private final boolean detailedErrorsEnabled;
     private final String format;
     private final String filterPath;
@@ -183,7 +183,7 @@ public abstract class AbstractRestChannel implements RestChannel {
     }
 
     @Override
-    public RestRequest request() {
+    public org.opensearch.rest.spi.RestRequest request() {
         return this.request;
     }
 

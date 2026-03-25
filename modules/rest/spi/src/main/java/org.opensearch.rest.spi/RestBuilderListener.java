@@ -30,11 +30,9 @@
  * GitHub history for details.
  */
 
-package org.opensearch.rest.action;
+package org.opensearch.rest.spi;
 
 import org.opensearch.core.xcontent.XContentBuilder;
-import org.opensearch.rest.RestChannel;
-import org.opensearch.rest.RestResponse;
 
 /**
  * A REST action listener that builds an {@link XContentBuilder} based response.

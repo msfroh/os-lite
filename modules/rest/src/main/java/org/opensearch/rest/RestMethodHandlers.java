@@ -45,9 +45,9 @@ import java.util.Set;
 final class RestMethodHandlers implements MethodHandlers {
 
     private final String path;
-    private final Map<HttpRequest.Method, RestHandler> methodHandlers;
+    private final Map<HttpRequest.Method, org.opensearch.rest.spi.RestHandler> methodHandlers;
 
-    RestMethodHandlers(String path, RestHandler handler, HttpRequest.Method... methods) {
+    RestMethodHandlers(String path, org.opensearch.rest.spi.RestHandler handler, HttpRequest.Method... methods) {
         this.path = path;
         this.methodHandlers = new HashMap<>(methods.length);
         for (HttpRequest.Method method : methods) {
@@ -59,9 +59,9 @@ final class RestMethodHandlers implements MethodHandlers {
      * Add a handler for an additional array of methods. Note that {@code MethodHandlers}
      * does not allow replacing the handler for an already existing method.
      */
-    public RestMethodHandlers addMethods(RestHandler handler, HttpRequest.Method... methods) {
+    public RestMethodHandlers addMethods(org.opensearch.rest.spi.RestHandler handler, HttpRequest.Method... methods) {
         for (HttpRequest.Method method : methods) {
-            RestHandler existing = methodHandlers.putIfAbsent(method, handler);
+            org.opensearch.rest.spi.RestHandler existing = methodHandlers.putIfAbsent(method, handler);
             if (existing != null) {
                 throw new IllegalArgumentException("Cannot replace existing handler for [" + path + "] for method: " + method);
             }
@@ -73,7 +73,7 @@ final class RestMethodHandlers implements MethodHandlers {
      * Returns the handler for the given method or {@code null} if none exists.
      */
     @Nullable
-    public RestHandler getHandler(HttpRequest.Method method) {
+    public org.opensearch.rest.spi.RestHandler getHandler(HttpRequest.Method method) {
         return methodHandlers.get(method);
     }
 

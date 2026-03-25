@@ -47,7 +47,6 @@ import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.common.unit.ByteSizeValue;
 import org.opensearch.core.xcontent.MediaType;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
-import org.opensearch.core.xcontent.ToXContent;
 import org.opensearch.core.xcontent.XContentParser;
 import org.opensearch.http.HttpChannel;
 import org.opensearch.http.HttpRequest;
@@ -75,7 +74,7 @@ import static org.opensearch.core.common.unit.ByteSizeValue.parseBytesSizeValue;
  * @opensearch.api
  */
 @PublicApi(since = "1.0.0")
-public class RestRequest implements ToXContent.Params {
+public class RestRequest implements org.opensearch.rest.spi.RestRequest {
 
     // tchar pattern as defined by RFC7230 section 3.2.6
     private static final Pattern TCHAR_PATTERN = Pattern.compile("[a-zA-z0-9!#$%&'*+\\-.\\^_`|~]+");
@@ -152,8 +151,8 @@ public class RestRequest implements ToXContent.Params {
 
     /**
      * Invoke {@link HttpRequest#releaseAndCopy()} on the http request in this instance and replace a pooled http request
-     * with an unpooled copy. This is supposed to be used before passing requests to {@link RestHandler} instances that can not safely
-     * handle http requests that use pooled buffers as determined by {@link RestHandler#allowsUnsafeBuffers()}.
+     * with an unpooled copy. This is supposed to be used before passing requests to {@link org.opensearch.rest.spi.RestHandler} instances that can not safely
+     * handle http requests that use pooled buffers as determined by {@link org.opensearch.rest.spi.RestHandler#allowsUnsafeBuffers()}.
      */
     void ensureSafeBuffers() {
         httpRequest = httpRequest.releaseAndCopy();
@@ -251,6 +250,7 @@ public class RestRequest implements ToXContent.Params {
     /**
      * The non decoded, raw path provided.
      */
+    @Override
     public String rawPath() {
         return rawPath;
     }
@@ -258,6 +258,7 @@ public class RestRequest implements ToXContent.Params {
     /**
      * The path part of the URI (without the query string), decoded.
      */
+    @Override
     public final String path() {
         return UrlUtils.decodeComponent(rawPath());
     }
@@ -291,6 +292,7 @@ public class RestRequest implements ToXContent.Params {
      * Get the value of the header or {@code null} if not found. This method only retrieves the first header value if multiple values are
      * sent. Use of {@link #getAllHeaderValues(String)} should be preferred
      */
+    @Override
     public final String header(String name) {
         List<String> values = headers.get(name);
         if (values != null && values.isEmpty() == false) {
@@ -313,10 +315,12 @@ public class RestRequest implements ToXContent.Params {
     /**
      * Get all of the headers and values associated with the headers. Modifications of this map are not supported.
      */
+    @Override
     public final Map<String, List<String>> getHeaders() {
         return headers;
     }
 
+    @Override
     public final long getRequestId() {
         return requestId;
     }
@@ -326,6 +330,7 @@ public class RestRequest implements ToXContent.Params {
      * a request without a valid {@code Content-Type} header, a request without content ({@link #hasContent()}, or a plain text request
      */
     @Nullable
+    @Override
     public final MediaType getMediaType() {
         return mediaType.get();
     }
@@ -334,10 +339,12 @@ public class RestRequest implements ToXContent.Params {
         return httpChannel;
     }
 
+    @Override
     public HttpRequest getHttpRequest() {
         return httpRequest;
     }
 
+    @Override
     public final boolean hasParam(String key) {
         return params.containsKey(key);
     }
@@ -358,6 +365,7 @@ public class RestRequest implements ToXContent.Params {
         return value;
     }
 
+    @Override
     public Map<String, String> params() {
         return params;
     }
@@ -368,6 +376,7 @@ public class RestRequest implements ToXContent.Params {
      *
      * @return the list of currently consumed parameters.
      */
+    @Override
     public List<String> consumedParams() {
         return new ArrayList<>(consumedParams);
     }
@@ -378,7 +387,8 @@ public class RestRequest implements ToXContent.Params {
      *
      * @return the list of currently unconsumed parameters.
      */
-    List<String> unconsumedParams() {
+    @Override
+    public List<String> unconsumedParams() {
         return params.keySet().stream().filter(p -> !consumedParams.contains(p)).collect(Collectors.toList());
     }
 
@@ -434,14 +444,17 @@ public class RestRequest implements ToXContent.Params {
         return Booleans.parseBoolean(param(key), defaultValue);
     }
 
+    @Override
     public TimeValue paramAsTime(String key, TimeValue defaultValue) {
         return parseTimeValue(param(key), defaultValue, key);
     }
 
+    @Override
     public ByteSizeValue paramAsSize(String key, ByteSizeValue defaultValue) {
         return parseBytesSizeValue(param(key), defaultValue, key);
     }
 
+    @Override
     public String[] paramAsStringArray(String key, String[] defaultValue) {
         String value = param(key);
         if (value == null) {
@@ -450,6 +463,7 @@ public class RestRequest implements ToXContent.Params {
         return Strings.splitStringByCommaToArray(value);
     }
 
+    @Override
     public String[] paramAsStringArrayOrEmptyIfAll(String key) {
         String[] params = paramAsStringArray(key, Strings.EMPTY_ARRAY);
         if (Strings.isAllOrWildcard(params)) {
@@ -488,7 +502,7 @@ public class RestRequest implements ToXContent.Params {
 
     /**
      * Does this request have content or a {@code source} parameter? Use this instead of {@link #hasContent()} if this
-     * {@linkplain RestHandler} treats the {@code source} parameter like the body content.
+     * {@linkplain org.opensearch.rest.spi.RestHandler} treats the {@code source} parameter like the body content.
      */
     public final boolean hasContentOrSourceParam() {
         return hasContent() || hasParam("source");
