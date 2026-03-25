@@ -174,7 +174,11 @@ public class BytesRestResponse extends RestResponse {
         builder.endObject();
     }
 
-    public static BytesRestResponse createSimpleErrorResponse(org.opensearch.rest.spi.RestChannel channel, RestStatus status, String errorMessage) throws IOException {
+    public static BytesRestResponse createSimpleErrorResponse(
+        org.opensearch.rest.spi.RestChannel channel,
+        RestStatus status,
+        String errorMessage
+    ) throws IOException {
         return new BytesRestResponse(
             status,
             channel.newErrorBuilder().startObject().field("error", errorMessage).field("status", status.getStatus()).endObject()

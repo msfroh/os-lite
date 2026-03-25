@@ -44,9 +44,7 @@ import org.opensearch.core.common.io.stream.NamedWriteable;
 import org.opensearch.core.common.io.stream.NamedWriteableRegistry;
 import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.core.xcontent.XContentParser;
-import org.opensearch.env.Environment;
 import org.opensearch.threadpool.ExecutorBuilder;
-import org.opensearch.threadpool.ThreadPool;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -101,9 +99,7 @@ public abstract class Plugin implements Closeable {
      * Note: To aid in the migration away from guice, all objects returned as components will be bound in guice
      * to themselves.
      */
-    public Collection<Object> createComponents(
-        PluginResources pluginResources
-    ) {
+    public Collection<Object> createComponents(PluginResources pluginResources) {
         return Collections.emptyList();
     }
 

@@ -19,9 +19,6 @@ import org.opensearch.transport.client.node.NodeClient;
  * A holder class for the various resources that Plugin may reasonably need from server.
  */
 @PublicApi(since = "1.0.0")
-public record PluginResources(NamedXContentRegistry namedXContentRegistry,
-                              NamedWriteableRegistry namedWriteableRegistry,
-                              Environment environment,
-                              ThreadPool threadPool,
-                              NodeClient nodeClient) {
+public record PluginResources(NamedXContentRegistry namedXContentRegistry, NamedWriteableRegistry namedWriteableRegistry,
+    Environment environment, ThreadPool threadPool, NodeClient nodeClient) {
 }

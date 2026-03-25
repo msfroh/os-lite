@@ -94,7 +94,11 @@ public abstract class BaseRestHandler implements org.opensearch.rest.spi.RestHan
     public abstract String getName();
 
     @Override
-    public final void handleRequest(org.opensearch.rest.spi.RestRequest request, org.opensearch.rest.spi.RestChannel channel, NodeClient client) throws Exception {
+    public final void handleRequest(
+        org.opensearch.rest.spi.RestRequest request,
+        org.opensearch.rest.spi.RestChannel channel,
+        NodeClient client
+    ) throws Exception {
         // prepare the request for execution; has the side effect of touching the request parameters
         final RestChannelConsumer action = prepareRequest(request, client);
 
@@ -207,7 +211,8 @@ public abstract class BaseRestHandler implements org.opensearch.rest.spi.RestHan
      * @throws IOException if an I/O exception occurred parsing the request and preparing for
      *                     execution
      */
-    protected abstract RestChannelConsumer prepareRequest(org.opensearch.rest.spi.RestRequest request, NodeClient client) throws IOException;
+    protected abstract RestChannelConsumer prepareRequest(org.opensearch.rest.spi.RestRequest request, NodeClient client)
+        throws IOException;
 
     /**
      * Parameters used for controlling the response and thus might not be consumed during

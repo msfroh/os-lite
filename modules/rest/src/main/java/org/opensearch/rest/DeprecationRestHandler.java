@@ -59,7 +59,11 @@ public class DeprecationRestHandler implements org.opensearch.rest.spi.RestHandl
      * @throws NullPointerException if any parameter except {@code deprecationMessage} is {@code null}
      * @throws IllegalArgumentException if {@code deprecationMessage} is not a valid header
      */
-    public DeprecationRestHandler(org.opensearch.rest.spi.RestHandler handler, String deprecationMessage, DeprecationLogger deprecationLogger) {
+    public DeprecationRestHandler(
+        org.opensearch.rest.spi.RestHandler handler,
+        String deprecationMessage,
+        DeprecationLogger deprecationLogger
+    ) {
         this.handler = Objects.requireNonNull(handler);
         this.deprecationMessage = requireValidHeader(deprecationMessage);
         this.deprecationLogger = Objects.requireNonNull(deprecationLogger);
@@ -71,7 +75,8 @@ public class DeprecationRestHandler implements org.opensearch.rest.spi.RestHandl
      * Usage is logged via the {@link DeprecationLogger} so that the actual response can be notified of deprecation as well.
      */
     @Override
-    public void handleRequest(org.opensearch.rest.spi.RestRequest request, org.opensearch.rest.spi.RestChannel channel, NodeClient client) throws Exception {
+    public void handleRequest(org.opensearch.rest.spi.RestRequest request, org.opensearch.rest.spi.RestChannel channel, NodeClient client)
+        throws Exception {
         deprecationLogger.deprecate("deprecated_route", deprecationMessage);
 
         handler.handleRequest(request, channel, client);

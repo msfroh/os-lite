@@ -262,8 +262,10 @@ public class Node implements Closeable {
 
             Collection<Object> pluginComponents = pluginsService.filterPlugins(Plugin.class)
                 .stream()
-                .flatMap(p -> p.createComponents(new PluginResources(
-                        xContentRegistry, namedWriteableRegistry, environment, threadPool, client)).stream())
+                .flatMap(
+                    p -> p.createComponents(new PluginResources(xContentRegistry, namedWriteableRegistry, environment, threadPool, client))
+                        .stream()
+                )
                 .toList();
             ModulesBuilder modules = new ModulesBuilder();
             // plugin modules must be added here, before others or we can get crazy injection errors...
@@ -351,9 +353,7 @@ public class Node implements Closeable {
                 .filter(p -> p instanceof LifecycleComponent)
                 .map(p -> (LifecycleComponent) p)
                 .collect(Collectors.toList());
-            pluginLifecycleComponents.addAll(
-                pluginsService.getGuiceServiceClasses().stream().map(injector::getInstance).toList()
-            );
+            pluginLifecycleComponents.addAll(pluginsService.getGuiceServiceClasses().stream().map(injector::getInstance).toList());
             resourcesToClose.addAll(pluginLifecycleComponents);
             this.pluginLifecycleComponents = Collections.unmodifiableList(pluginLifecycleComponents);
             ActionModule.DynamicActionRegistry dynamicActionRegistry = actionModule.getDynamicActionRegistry();
@@ -372,8 +372,7 @@ public class Node implements Closeable {
 
     public static final Setting<String> BREAKER_TYPE_KEY = new Setting<>("indices.breaker.type", "hierarchy", (s) -> switch (s) {
         case "hierarchy", "none" -> s;
-        default ->
-                throw new IllegalArgumentException("indices.breaker.type must be one of [hierarchy, none] but was: " + s);
+        default -> throw new IllegalArgumentException("indices.breaker.type must be one of [hierarchy, none] but was: " + s);
     }, Setting.Property.NodeScope);
 
     /**

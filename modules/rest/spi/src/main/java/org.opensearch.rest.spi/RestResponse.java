@@ -34,7 +34,6 @@ package org.opensearch.rest.spi;
 
 import org.opensearch.OpenSearchException;
 import org.opensearch.common.annotation.PublicApi;
-import org.opensearch.common.lease.Releasable;
 import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
 

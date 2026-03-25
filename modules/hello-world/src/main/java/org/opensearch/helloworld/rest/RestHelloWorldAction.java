@@ -21,7 +21,6 @@ import org.opensearch.rest.spi.RestRequest;
 import org.opensearch.rest.spi.RestResponse;
 import org.opensearch.transport.client.node.NodeClient;
 
-import java.io.IOException;
 import java.util.List;
 
 public class RestHelloWorldAction extends BaseRestHandler {

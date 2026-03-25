@@ -47,18 +47,24 @@ public class RestPlugin extends Plugin implements NetworkPlugin, ExtensiblePlugi
     }
 
     @Override
-    public Optional<HttpServerTransport.Dispatcher> getHttpServerTransportDispatcher(BigArrays bigArrays, Settings settings, CircuitBreakerService circuitBreakerService, ClusterSettings clusterSettings, Tracer tracer) {
+    public Optional<HttpServerTransport.Dispatcher> getHttpServerTransportDispatcher(
+        BigArrays bigArrays,
+        Settings settings,
+        CircuitBreakerService circuitBreakerService,
+        ClusterSettings clusterSettings,
+        Tracer tracer
+    ) {
         RestController restController = new RestController(
-                Collections.emptySet(),
-                UnaryOperator.identity(),
-                pluginResources.nodeClient(),
-                circuitBreakerService,
-                pluginResources.namedXContentRegistry(),
-                bigArrays,
-                HttpHandlingSettings.fromSettings(settings),
-                CorsHandler.fromSettings(settings),
-                new RestTracer(settings, clusterSettings),
-                tracer
+            Collections.emptySet(),
+            UnaryOperator.identity(),
+            pluginResources.nodeClient(),
+            circuitBreakerService,
+            pluginResources.namedXContentRegistry(),
+            bigArrays,
+            HttpHandlingSettings.fromSettings(settings),
+            CorsHandler.fromSettings(settings),
+            new RestTracer(settings, clusterSettings),
+            tracer
         );
         for (RestHandlerPlugin restHandlerPlugin : restHandlerPlugins) {
             for (RestHandler restHandler : restHandlerPlugin.getRestHandlers()) {

@@ -165,7 +165,9 @@ public class RestController implements HttpServerTransport.Dispatcher {
         registerHandlerNoWrap(
             HttpRequest.Method.GET,
             "/favicon.ico",
-            (request, channel, clnt) -> channel.sendResponse(new org.opensearch.rest.spi.BytesRestResponse(RestStatus.OK, "image/x-icon", FAVICON_RESPONSE))
+            (request, channel, clnt) -> channel.sendResponse(
+                new org.opensearch.rest.spi.BytesRestResponse(RestStatus.OK, "image/x-icon", FAVICON_RESPONSE)
+            )
         );
     }
 
@@ -187,7 +189,12 @@ public class RestController implements HttpServerTransport.Dispatcher {
      * @param handler The handler to actually execute
      * @param deprecationMessage The message to log and send as a header in the response
      */
-    protected void registerAsDeprecatedHandler(HttpRequest.Method method, String path, org.opensearch.rest.spi.RestHandler handler, String deprecationMessage) {
+    protected void registerAsDeprecatedHandler(
+        HttpRequest.Method method,
+        String path,
+        org.opensearch.rest.spi.RestHandler handler,
+        String deprecationMessage
+    ) {
         assert (handler instanceof DeprecationRestHandler) == false;
 
         registerHandler(method, path, new DeprecationRestHandler(handler, deprecationMessage, deprecationLogger));
@@ -426,7 +433,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
         }
     }
 
-    private void sendBadRequestResponse(final org.opensearch.rest.spi.RestChannel channel, final ThreadContext threadContext, final Throwable cause) {
+    private void sendBadRequestResponse(
+        final org.opensearch.rest.spi.RestChannel channel,
+        final ThreadContext threadContext,
+        final Throwable cause
+    ) {
         try {
             final Exception e;
             if (cause == null) {
@@ -442,11 +453,21 @@ public class RestController implements HttpServerTransport.Dispatcher {
                 e.addSuppressed(cause);
             }
             logger.warn("failed to send bad request response", e);
-            channel.sendResponse(new org.opensearch.rest.spi.BytesRestResponse(INTERNAL_SERVER_ERROR, org.opensearch.rest.spi.BytesRestResponse.TEXT_CONTENT_TYPE, BytesArray.EMPTY));
+            channel.sendResponse(
+                new org.opensearch.rest.spi.BytesRestResponse(
+                    INTERNAL_SERVER_ERROR,
+                    org.opensearch.rest.spi.BytesRestResponse.TEXT_CONTENT_TYPE,
+                    BytesArray.EMPTY
+                )
+            );
         }
     }
 
-    private void dispatchRequest(RestRequest request, org.opensearch.rest.spi.RestChannel channel, org.opensearch.rest.spi.RestHandler handler) throws Exception {
+    private void dispatchRequest(
+        RestRequest request,
+        org.opensearch.rest.spi.RestChannel channel,
+        org.opensearch.rest.spi.RestHandler handler
+    ) throws Exception {
         final int contentLength = request.content().length();
         final MediaType mediaType = request.getMediaType();
         if (contentLength > 0) {
@@ -477,7 +498,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
             if (handler.supportsStreaming()) {
                 // The handler may support streaming but not the engine, in this case we fail with the bad request
                 if (channel instanceof org.opensearch.rest.spi.StreamingRestChannel) {
-                    responseChannel = new StreamHandlingHttpChannel((org.opensearch.rest.spi.StreamingRestChannel) channel, circuitBreakerService, contentLength);
+                    responseChannel = new StreamHandlingHttpChannel(
+                        (org.opensearch.rest.spi.StreamingRestChannel) channel,
+                        circuitBreakerService,
+                        contentLength
+                    );
                 } else {
                     throw new IllegalStateException(
                         "The engine does not support HTTP streaming, unable to serve uri ["
@@ -514,7 +539,12 @@ public class RestController implements HttpServerTransport.Dispatcher {
         }
     }
 
-    private boolean handleNoHandlerFound(String rawPath, HttpRequest.Method method, String uri, org.opensearch.rest.spi.RestChannel channel) {
+    private boolean handleNoHandlerFound(
+        String rawPath,
+        HttpRequest.Method method,
+        String uri,
+        org.opensearch.rest.spi.RestChannel channel
+    ) {
         // Get the map of matching handlers for a request, for the full set of HTTP methods.
         final Set<HttpRequest.Method> validMethodSet = getValidHandlerMethodSet(rawPath);
         if (validMethodSet.contains(method) == false) {
@@ -533,7 +563,8 @@ public class RestController implements HttpServerTransport.Dispatcher {
         return false;
     }
 
-    private void sendContentTypeErrorMessage(@Nullable List<String> contentTypeHeader, org.opensearch.rest.spi.RestChannel channel) throws IOException {
+    private void sendContentTypeErrorMessage(@Nullable List<String> contentTypeHeader, org.opensearch.rest.spi.RestChannel channel)
+        throws IOException {
         final String errorMessage;
         if (contentTypeHeader == null) {
             errorMessage = "Content-Type header is missing";
@@ -544,7 +575,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
         channel.sendResponse(org.opensearch.rest.spi.BytesRestResponse.createSimpleErrorResponse(channel, NOT_ACCEPTABLE, errorMessage));
     }
 
-    private void tryAllHandlers(final RestRequest request, final org.opensearch.rest.spi.RestChannel channel, final ThreadContext threadContext) throws Exception {
+    private void tryAllHandlers(
+        final RestRequest request,
+        final org.opensearch.rest.spi.RestChannel channel,
+        final ThreadContext threadContext
+    ) throws Exception {
         for (final RestHeaderDefinition restHeader : headersToCopy) {
             final String name = restHeader.getName();
             final List<String> headerValues = request.getAllHeaderValues(name);
@@ -568,7 +603,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
         // we consume the error_trace parameter first to ensure that it is always consumed
         if (request.paramAsBoolean("error_trace", false) && channel.detailedErrorsEnabled() == false) {
             channel.sendResponse(
-                org.opensearch.rest.spi.BytesRestResponse.createSimpleErrorResponse(channel, BAD_REQUEST, "error traces in responses are disabled.")
+                org.opensearch.rest.spi.BytesRestResponse.createSimpleErrorResponse(
+                    channel,
+                    BAD_REQUEST,
+                    "error traces in responses are disabled."
+                )
             );
             return;
         }
@@ -654,14 +693,21 @@ public class RestController implements HttpServerTransport.Dispatcher {
             if (validMethodSet.isEmpty() == false) {
                 msg.append(", allowed: ").append(validMethodSet);
             }
-            org.opensearch.rest.spi.BytesRestResponse bytesRestResponse = org.opensearch.rest.spi.BytesRestResponse.createSimpleErrorResponse(channel, METHOD_NOT_ALLOWED, msg.toString());
+            org.opensearch.rest.spi.BytesRestResponse bytesRestResponse = org.opensearch.rest.spi.BytesRestResponse
+                .createSimpleErrorResponse(channel, METHOD_NOT_ALLOWED, msg.toString());
             if (validMethodSet.isEmpty() == false) {
                 bytesRestResponse.addHeader("Allow", Strings.collectionToDelimitedString(validMethodSet, ","));
             }
             channel.sendResponse(bytesRestResponse);
         } catch (final IOException e) {
             logger.warn("failed to send bad request response", e);
-            channel.sendResponse(new org.opensearch.rest.spi.BytesRestResponse(INTERNAL_SERVER_ERROR, org.opensearch.rest.spi.BytesRestResponse.TEXT_CONTENT_TYPE, BytesArray.EMPTY));
+            channel.sendResponse(
+                new org.opensearch.rest.spi.BytesRestResponse(
+                    INTERNAL_SERVER_ERROR,
+                    org.opensearch.rest.spi.BytesRestResponse.TEXT_CONTENT_TYPE,
+                    BytesArray.EMPTY
+                )
+            );
         }
     }
 
@@ -673,7 +719,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
      * - Options</a>).
      */
     private void handleOptionsRequest(org.opensearch.rest.spi.RestChannel channel, Set<HttpRequest.Method> validMethodSet) {
-        org.opensearch.rest.spi.BytesRestResponse bytesRestResponse = new org.opensearch.rest.spi.BytesRestResponse(OK, TEXT_CONTENT_TYPE, BytesArray.EMPTY);
+        org.opensearch.rest.spi.BytesRestResponse bytesRestResponse = new org.opensearch.rest.spi.BytesRestResponse(
+            OK,
+            TEXT_CONTENT_TYPE,
+            BytesArray.EMPTY
+        );
         // When we have an OPTIONS HTTP request and no valid handlers, simply send OK by default (with the Access Control Origin header
         // which gets automatically added).
         if (validMethodSet.isEmpty() == false) {
@@ -725,7 +775,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
         private final int contentLength;
         private final AtomicBoolean closed = new AtomicBoolean();
 
-        ResourceHandlingHttpChannel(org.opensearch.rest.spi.RestChannel delegate, CircuitBreakerService circuitBreakerService, int contentLength) {
+        ResourceHandlingHttpChannel(
+            org.opensearch.rest.spi.RestChannel delegate,
+            CircuitBreakerService circuitBreakerService,
+            int contentLength
+        ) {
             this.delegate = delegate;
             this.circuitBreakerService = circuitBreakerService;
             this.contentLength = contentLength;
@@ -793,7 +847,11 @@ public class RestController implements HttpServerTransport.Dispatcher {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final AtomicBoolean subscribed = new AtomicBoolean();
 
-        StreamHandlingHttpChannel(org.opensearch.rest.spi.StreamingRestChannel delegate, CircuitBreakerService circuitBreakerService, int contentLength) {
+        StreamHandlingHttpChannel(
+            org.opensearch.rest.spi.StreamingRestChannel delegate,
+            CircuitBreakerService circuitBreakerService,
+            int contentLength
+        ) {
             this.delegate = delegate;
             this.circuitBreakerService = circuitBreakerService;
             this.contentLength = contentLength;

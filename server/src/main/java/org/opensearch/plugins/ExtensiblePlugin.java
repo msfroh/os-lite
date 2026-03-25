@@ -32,7 +32,6 @@
 
 package org.opensearch.plugins;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -43,5 +42,4 @@ import java.util.function.Consumer;
  *
  * @opensearch.api
  */
-public interface ExtensiblePlugin extends Consumer<Plugin> {
-}
+public interface ExtensiblePlugin extends Consumer<Plugin> {}
