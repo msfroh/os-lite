@@ -30,24 +30,21 @@
  * GitHub history for details.
  */
 
-package org.opensearch.rest;
+package org.opensearch.http;
 
 import org.opensearch.common.Booleans;
 import org.opensearch.common.path.PathTrie;
-import org.opensearch.core.common.Strings;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * REST utility class
  *
  * @opensearch.api
  */
-public class RestUtils {
+public class UrlUtils {
 
     /**
      * Sets whether we decode a '+' in an url as a space or not.
@@ -59,7 +56,7 @@ public class RestUtils {
     public static final PathTrie.Decoder REST_DECODER = new PathTrie.Decoder() {
         @Override
         public String decode(String value) {
-            return RestUtils.decodeComponent(value);
+            return UrlUtils.decodeComponent(value);
         }
     };
 
@@ -242,36 +239,4 @@ public class RestUtils {
         }
     }
 
-    /**
-     * Determine if CORS setting is a regex
-     *
-     * @return a corresponding {@link Pattern} if so and o.w. null.
-     */
-    public static Pattern checkCorsSettingForRegex(String corsSetting) {
-        if (corsSetting == null) {
-            return null;
-        }
-        int len = corsSetting.length();
-        boolean isRegex = len > 2 && corsSetting.startsWith("/") && corsSetting.endsWith("/");
-
-        if (isRegex) {
-            return Pattern.compile(corsSetting.substring(1, corsSetting.length() - 1));
-        }
-
-        return null;
-    }
-
-    /**
-     * Return the CORS setting as an array of origins.
-     *
-     * @param corsSetting the CORS allow origin setting as configured by the user;
-     *                    should never pass null, but we check for it anyway.
-     * @return an array of origins if set, otherwise {@code null}.
-     */
-    public static String[] corsSettingAsArray(String corsSetting) {
-        if (Strings.isNullOrEmpty(corsSetting)) {
-            return new String[0];
-        }
-        return Arrays.asList(corsSetting.split(",")).stream().map(String::trim).toArray(size -> new String[size]);
-    }
 }

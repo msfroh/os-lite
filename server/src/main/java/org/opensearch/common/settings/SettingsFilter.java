@@ -35,7 +35,6 @@ package org.opensearch.common.settings;
 import org.opensearch.common.regex.Regex;
 import org.opensearch.core.common.Strings;
 import org.opensearch.core.xcontent.ToXContent.Params;
-import org.opensearch.rest.RestRequest;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -83,12 +82,6 @@ public final class SettingsFilter {
      */
     public static boolean isValidPattern(String pattern) {
         return AbstractScopedSettings.isValidKey(pattern) || Regex.isSimpleMatchPattern(pattern);
-    }
-
-    public void addFilterSettingParams(RestRequest request) {
-        if (patterns.isEmpty() == false) {
-            request.params().put(SETTINGS_FILTER_PARAM, patternString);
-        }
     }
 
     public static Settings filterSettings(Params params, Settings settings) {

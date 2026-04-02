@@ -6,7 +6,7 @@
  * compatible open source license.
  */
 
-package org.opensearch.rest;
+package org.opensearch.rest.spi;
 
 import org.opensearch.common.annotation.ExperimentalApi;
 import org.opensearch.core.rest.RestStatus;
@@ -23,7 +23,7 @@ import org.reactivestreams.Publisher;
  * @opensearch.experimental
  */
 @ExperimentalApi
-public interface StreamingRestChannel extends RestChannel, Publisher<HttpChunk> {
+public interface StreamingRestChannel extends org.opensearch.rest.spi.RestChannel, Publisher<HttpChunk> {
     /**
      * Sends the next {@link HttpChunk} to the response stream
      * @param chunk response chunk

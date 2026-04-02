@@ -30,16 +30,27 @@
  * GitHub history for details.
  */
 
-package org.opensearch.plugins;
-
-import java.util.function.Consumer;
+package org.opensearch.rest.spi;
 
 /**
- * An extension point for {@link Plugin} implementations to be themselves extensible.
- * <p>
- * This class provides a callback for extensible plugins to be informed of other plugins
- * which extend them.
+ * A REST enabled action listener that has a basic onFailure implementation, and requires
+ * sub classes to only implement {@link #buildResponse(Object)}.
  *
  * @opensearch.api
  */
-public interface ExtensiblePlugin extends Consumer<Plugin> {}
+public abstract class RestResponseListener<Response> extends RestActionListener<Response> {
+
+    protected RestResponseListener(RestChannel channel) {
+        super(channel);
+    }
+
+    @Override
+    protected final void processResponse(Response response) throws Exception {
+        channel.sendResponse(buildResponse(response));
+    }
+
+    /**
+     * Builds the response to send back through the channel.
+     */
+    public abstract RestResponse buildResponse(Response response) throws Exception;
+}

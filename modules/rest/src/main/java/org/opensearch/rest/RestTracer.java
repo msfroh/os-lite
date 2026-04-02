@@ -30,7 +30,7 @@
  * GitHub history for details.
  */
 
-package org.opensearch.http;
+package org.opensearch.rest;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -39,26 +39,28 @@ import org.opensearch.common.Nullable;
 import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.Settings;
 import org.opensearch.core.common.Strings;
-import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.RestResponse;
+import org.opensearch.http.HttpChannel;
+import org.opensearch.http.HttpChunk;
+import org.opensearch.http.HttpTransportSettings;
+import org.opensearch.http.StreamingHttpChannel;
 import org.opensearch.tasks.Task;
 import org.opensearch.transport.TransportService;
 
 import java.util.List;
 
 /**
- * Http request trace logger. See {@link #maybeTraceRequest(RestRequest, Exception)} for details.
+ * REST request trace logger. See {@link #maybeTraceRequest(RestRequest, Exception)} for details.
  *
  * @opensearch.internal
  */
-class HttpTracer {
+public class RestTracer {
 
-    private final Logger logger = LogManager.getLogger(HttpTracer.class);
+    private final Logger logger = LogManager.getLogger(RestTracer.class);
 
     private volatile String[] tracerLogInclude;
     private volatile String[] tracerLogExclude;
 
-    HttpTracer(Settings settings, ClusterSettings clusterSettings) {
+    public RestTracer(Settings settings, ClusterSettings clusterSettings) {
 
         setTracerLogInclude(HttpTransportSettings.SETTING_HTTP_TRACE_LOG_INCLUDE.get(settings));
         setTracerLogExclude(HttpTransportSettings.SETTING_HTTP_TRACE_LOG_EXCLUDE.get(settings));
@@ -78,7 +80,7 @@ class HttpTracer {
      *                    {@code null} if the request wasn't logged
      */
     @Nullable
-    HttpTracer maybeTraceRequest(RestRequest restRequest, @Nullable Exception e) {
+    public RestTracer maybeTraceRequest(RestRequest restRequest, @Nullable Exception e) {
         if (logger.isTraceEnabled() && TransportService.shouldTraceAction(restRequest.uri(), tracerLogInclude, tracerLogExclude)) {
             logger.trace(
                 new ParameterizedMessage(
@@ -107,7 +109,7 @@ class HttpTracer {
      * @param success       Whether the response was successfully sent
      */
     void traceResponse(
-        RestResponse restResponse,
+        org.opensearch.rest.spi.RestResponse restResponse,
         HttpChannel httpChannel,
         String contentLength,
         String opaqueHeader,

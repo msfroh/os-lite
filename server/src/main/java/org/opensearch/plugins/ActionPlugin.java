@@ -36,24 +36,13 @@ import org.opensearch.action.ActionRequest;
 import org.opensearch.action.ActionType;
 import org.opensearch.action.support.ActionFilter;
 import org.opensearch.action.support.TransportAction;
-import org.opensearch.cluster.node.DiscoveryNodes;
-import org.opensearch.common.settings.ClusterSettings;
-import org.opensearch.common.settings.Settings;
-import org.opensearch.common.settings.SettingsFilter;
-import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionResponse;
 import org.opensearch.core.common.Strings;
-import org.opensearch.rest.RestController;
-import org.opensearch.rest.RestHandler;
-import org.opensearch.rest.RestHeaderDefinition;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
@@ -94,81 +83,10 @@ public interface ActionPlugin {
     }
 
     /**
-     * Rest handlers added by this plugin.
-     */
-    default List<RestHandler> getRestHandlers(
-        Settings settings,
-        RestController restController,
-        ClusterSettings clusterSettings,
-        SettingsFilter settingsFilter,
-        Supplier<DiscoveryNodes> nodesInCluster
-    ) {
-        return Collections.emptyList();
-    }
-
-    /**
-     * Returns headers which should be copied through rest requests on to internal requests.
-     */
-    default Collection<RestHeaderDefinition> getRestHeaders() {
-        return Collections.emptyList();
-    }
-
-    /**
      * Returns headers which should be copied from internal requests into tasks.
      */
     default Collection<String> getTaskHeaders() {
         return Collections.emptyList();
-    }
-
-    /**
-     * Returns a function used to wrap each rest request before handling the request.
-     * The returned {@link UnaryOperator} is called for every incoming rest request and receives
-     * the original rest handler as it's input. This allows adding arbitrary functionality around
-     * rest request handlers to do for instance logging or authentication.
-     * A simple example of how to only allow GET request is here:
-     * <pre>
-     * {@code
-     *    UnaryOperator<RestHandler> getRestHandlerWrapper(ThreadContext threadContext) {
-     *      return originalHandler -> (RestHandler) (request, channel, client) -> {
-     *        if (request.method() != Method.GET) {
-     *          throw new IllegalStateException("only GET requests are allowed");
-     *        }
-     *        originalHandler.handleRequest(request, channel, client);
-     *      };
-     *    }
-     * }
-     * </pre>
-     *
-     * Note: Only one installed plugin may implement a rest wrapper.
-     */
-    default UnaryOperator<RestHandler> getRestHandlerWrapper(ThreadContext threadContext, Set<RestHeaderDefinition> headersToCopy) {
-        return this.getRestHandlerWrapper(threadContext);
-    }
-
-    /**
-     * Returns a function used to wrap each rest request before handling the request.
-     * The returned {@link UnaryOperator} is called for every incoming rest request and receives
-     * the original rest handler as it's input. This allows adding arbitrary functionality around
-     * rest request handlers to do for instance logging or authentication.
-     * A simple example of how to only allow GET request is here:
-     * <pre>
-     * {@code
-     *    UnaryOperator<RestHandler> getRestHandlerWrapper(ThreadContext threadContext) {
-     *      return originalHandler -> (RestHandler) (request, channel, client) -> {
-     *        if (request.method() != Method.GET) {
-     *          throw new IllegalStateException("only GET requests are allowed");
-     *        }
-     *        originalHandler.handleRequest(request, channel, client);
-     *      };
-     *    }
-     * }
-     * </pre>
-     *
-     * Note: Only one installed plugin may implement a rest wrapper.
-     */
-    @Deprecated(forRemoval = true)
-    default UnaryOperator<RestHandler> getRestHandlerWrapper(ThreadContext threadContext) {
-        return null;
     }
 
     /**

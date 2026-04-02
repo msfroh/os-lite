@@ -37,12 +37,6 @@ import org.opensearch.common.lifecycle.LifecycleComponent;
 import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.common.transport.BoundTransportAddress;
 import org.opensearch.core.service.ReportingService;
-import org.opensearch.rest.RestChannel;
-import org.opensearch.rest.RestHandler;
-import org.opensearch.rest.RestRequest;
-
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * HTTP Transport server
@@ -66,36 +60,33 @@ public interface HttpServerTransport extends LifecycleComponent, ReportingServic
      */
     interface Dispatcher {
         /**
-         * Finds the matching {@link RestHandler} that the request is going to be dispatched to, if any.
-         * @param uri request URI
-         * @param rawPath request raw path
-         * @param method request HTTP method
-         * @param params request parameters
-         * @return matching {@link RestHandler} that the request is going to be dispatched to, {@code Optional.empty()} if none match
-         */
-        default Optional<RestHandler> dispatchHandler(String uri, String rawPath, RestRequest.Method method, Map<String, String> params) {
-            return Optional.empty();
-        }
-
-        /**
-         * Dispatches the {@link RestRequest} to the relevant request handler or responds to the given rest channel directly if
+         * Dispatches the {@link HttpRequest} to the relevant request handler or responds to the given http channel directly if
          * the request can't be handled by any request handler.
          *
          * @param request       the request to dispatch
          * @param channel       the response channel of this request
          * @param threadContext the thread context
          */
-        void dispatchRequest(RestRequest request, RestChannel channel, ThreadContext threadContext);
+        void dispatchRequest(HttpRequest request, HttpChannel channel, ThreadContext threadContext);
 
         /**
          * Dispatches a bad request. For example, if a request is malformed it will be dispatched via this method with the cause of the bad
          * request.
          *
+         * @param request       the request that was bad
          * @param channel       the response channel of this request
          * @param threadContext the thread context
          * @param cause         the cause of the bad request
          */
-        void dispatchBadRequest(RestChannel channel, ThreadContext threadContext, Throwable cause);
+        void dispatchBadRequest(HttpRequest request, HttpChannel channel, ThreadContext threadContext, Throwable cause);
 
     }
+
+    Dispatcher NO_OP_DISPATCHER = new Dispatcher() {
+        @Override
+        public void dispatchRequest(HttpRequest request, HttpChannel channel, ThreadContext threadContext) {}
+
+        @Override
+        public void dispatchBadRequest(HttpRequest request, HttpChannel channel, ThreadContext threadContext, Throwable cause) {}
+    };
 }

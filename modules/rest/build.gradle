@@ -7,9 +7,8 @@
  */
 
 opensearchplugin {
-    description = 'A demo plugin to confirm that we can add actions'
-    classname = 'org.opensearch.helloworld.HelloWorldPlugin'
-    extendedPlugins = ['rest']
+    description = 'REST layer plugin providing HTTP request dispatching'
+    classname = 'org.opensearch.rest.RestPlugin'
 }
 
 repositories {
@@ -21,5 +20,5 @@ repositories {
 testingConventions.enabled = false
 
 dependencies {
-    compileOnly project(':modules:rest:spi')
+    api project('spi')
 }

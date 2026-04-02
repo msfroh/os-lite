@@ -6,10 +6,11 @@
  * compatible open source license.
  */
 
-opensearchplugin {
-    description = 'A demo plugin to confirm that we can add actions'
-    classname = 'org.opensearch.helloworld.HelloWorldPlugin'
-    extendedPlugins = ['rest']
+apply plugin: 'opensearch.build'
+
+base {
+    group = 'org.opensearch.plugin'
+    archivesName = 'rest-spi'
 }
 
 repositories {
@@ -18,8 +19,8 @@ repositories {
     mavenCentral()
 }
 
-testingConventions.enabled = false
-
 dependencies {
-    compileOnly project(':modules:rest:spi')
+    compileOnly project(':server')
+    compileOnly "org.opensearch:opensearch-core:${versions.opensearch}"
+    //api "org.opensearch:opensearch-x-content:${versions.opensearch}"
 }

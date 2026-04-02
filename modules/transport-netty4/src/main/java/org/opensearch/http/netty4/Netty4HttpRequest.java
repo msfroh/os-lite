@@ -35,7 +35,6 @@ package org.opensearch.http.netty4;
 import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.http.HttpRequest;
-import org.opensearch.rest.RestRequest;
 import org.opensearch.transport.netty4.Netty4Utils;
 
 import java.util.AbstractMap;
@@ -116,34 +115,34 @@ public class Netty4HttpRequest implements HttpRequest {
     }
 
     @Override
-    public RestRequest.Method method() {
+    public Method method() {
         HttpMethod httpMethod = request.method();
-        if (httpMethod == HttpMethod.GET) return RestRequest.Method.GET;
+        if (httpMethod == HttpMethod.GET) return HttpRequest.Method.GET;
 
-        if (httpMethod == HttpMethod.POST) return RestRequest.Method.POST;
+        if (httpMethod == HttpMethod.POST) return HttpRequest.Method.POST;
 
-        if (httpMethod == HttpMethod.PUT) return RestRequest.Method.PUT;
+        if (httpMethod == HttpMethod.PUT) return HttpRequest.Method.PUT;
 
-        if (httpMethod == HttpMethod.DELETE) return RestRequest.Method.DELETE;
+        if (httpMethod == HttpMethod.DELETE) return HttpRequest.Method.DELETE;
 
         if (httpMethod == HttpMethod.HEAD) {
-            return RestRequest.Method.HEAD;
+            return HttpRequest.Method.HEAD;
         }
 
         if (httpMethod == HttpMethod.OPTIONS) {
-            return RestRequest.Method.OPTIONS;
+            return HttpRequest.Method.OPTIONS;
         }
 
         if (httpMethod == HttpMethod.PATCH) {
-            return RestRequest.Method.PATCH;
+            return HttpRequest.Method.PATCH;
         }
 
         if (httpMethod == HttpMethod.TRACE) {
-            return RestRequest.Method.TRACE;
+            return HttpRequest.Method.TRACE;
         }
 
         if (httpMethod == HttpMethod.CONNECT) {
-            return RestRequest.Method.CONNECT;
+            return HttpRequest.Method.CONNECT;
         }
 
         throw new IllegalArgumentException("Unexpected http method: " + httpMethod);

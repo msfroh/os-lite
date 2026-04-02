@@ -66,7 +66,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.opensearch.transport.AuxTransport.AUX_TRANSPORT_TYPES_KEY;
 import static org.opensearch.transport.AuxTransport.AUX_TRANSPORT_TYPES_SETTING;
@@ -151,7 +150,6 @@ public final class NetworkModule {
         NamedWriteableRegistry namedWriteableRegistry,
         NamedXContentRegistry xContentRegistry,
         NetworkService networkService,
-        HttpServerTransport.Dispatcher dispatcher,
         ClusterSettings clusterSettings,
         Tracer tracer,
         List<TransportInterceptor> transportInterceptors,
@@ -159,11 +157,20 @@ public final class NetworkModule {
     ) {
         this.settings = settings;
 
+        HttpServerTransport.Dispatcher dispatcher = plugins.stream()
+            .map(p -> p.getHttpServerTransportDispatcher(bigArrays, settings, circuitBreakerService, clusterSettings, tracer))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .reduce((a, b) -> {
+                throw new IllegalArgumentException("more than one plugin provided an HTTP dispatcher");
+            })
+            .orElse(HttpServerTransport.NO_OP_DISPATCHER);
+
         final Collection<SecureTransportSettingsProvider> secureTransportSettingsProviders = secureSettingsFactories.stream()
             .map(p -> p.getSecureTransportSettingsProvider(settings))
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .collect(Collectors.toList());
+            .toList();
 
         if (secureTransportSettingsProviders.size() > 1) {
             throw new IllegalArgumentException(
@@ -175,7 +182,7 @@ public final class NetworkModule {
             .map(p -> p.getSecureHttpTransportSettingsProvider(settings))
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .collect(Collectors.toList());
+            .toList();
 
         if (secureHttpTransportSettingsProviders.size() > 1) {
             throw new IllegalArgumentException(
@@ -187,7 +194,7 @@ public final class NetworkModule {
             .map(p -> p.getSecureAuxTransportSettingsProvider(settings))
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .collect(Collectors.toList());
+            .toList();
 
         if (secureAuxTransportSettingsProviders.size() > 1) {
             throw new IllegalArgumentException(

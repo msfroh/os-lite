@@ -36,17 +36,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.ExceptionsHelper;
 import org.opensearch.common.network.NetworkService;
-import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.Setting;
 import org.opensearch.common.settings.Setting.Property;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.BigArrays;
 import org.opensearch.common.util.concurrent.OpenSearchExecutors;
 import org.opensearch.common.util.io.IOUtils;
 import org.opensearch.common.util.net.NetUtils;
 import org.opensearch.core.common.unit.ByteSizeUnit;
 import org.opensearch.core.common.unit.ByteSizeValue;
-import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.http.AbstractHttpServerTransport;
 import org.opensearch.http.HttpChannel;
 import org.opensearch.http.HttpHandlingSettings;
@@ -197,27 +194,20 @@ public class Netty4HttpServerTransport extends AbstractHttpServerTransport {
 
     /**
      * Creates new HTTP transport implementations based on Netty 4
-     * @param settings seetings
+     * @param settings settings
      * @param networkService network service
-     * @param bigArrays big array allocator
-     * @param threadPool thread pool instance
-     * @param xContentRegistry XContent registry instance
      * @param dispatcher dispatcher instance
-     * @param clusterSettings cluster settings
      * @param sharedGroupFactory shared group factory
      */
     public Netty4HttpServerTransport(
         Settings settings,
         NetworkService networkService,
-        BigArrays bigArrays,
         ThreadPool threadPool,
-        NamedXContentRegistry xContentRegistry,
         Dispatcher dispatcher,
-        ClusterSettings clusterSettings,
         SharedGroupFactory sharedGroupFactory,
         Tracer tracer
     ) {
-        super(settings, networkService, bigArrays, threadPool, xContentRegistry, dispatcher, clusterSettings, tracer);
+        super(settings, networkService, threadPool, dispatcher, tracer);
         Netty4Utils.setAvailableProcessors(OpenSearchExecutors.NODE_PROCESSORS_SETTING.get(settings));
         NettyAllocator.logAllocatorDescriptionIfNeeded();
         this.sharedGroupFactory = sharedGroupFactory;

@@ -36,7 +36,6 @@ import org.opensearch.common.Nullable;
 import org.opensearch.common.annotation.PublicApi;
 import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
-import org.opensearch.rest.RestRequest;
 
 import java.util.Collections;
 import java.util.List;
@@ -66,10 +65,10 @@ public interface HttpRequest {
     /**
      * Returns the HTTP method used in the HTTP request.
      *
-     * @return the {@link RestRequest.Method} used in the REST request
+     * @return the {@link Method} used in the REST request
      * @throws IllegalArgumentException if the HTTP method is invalid
      */
-    RestRequest.Method method();
+    Method method();
 
     /**
      * The uri of the rest request, with the query string.
@@ -125,4 +124,22 @@ public interface HttpRequest {
      * @return a safe unpooled http request
      */
     HttpRequest releaseAndCopy();
+
+    /**
+     * The method used.
+     *
+     * @opensearch.api
+     */
+    @PublicApi(since = "1.0.0")
+    enum Method {
+        GET,
+        POST,
+        PUT,
+        DELETE,
+        OPTIONS,
+        HEAD,
+        PATCH,
+        TRACE,
+        CONNECT
+    }
 }

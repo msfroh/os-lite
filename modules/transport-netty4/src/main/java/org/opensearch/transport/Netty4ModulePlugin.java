@@ -136,17 +136,7 @@ public class Netty4ModulePlugin extends Plugin implements NetworkPlugin {
     ) {
         return Collections.singletonMap(
             NETTY_HTTP_TRANSPORT_NAME,
-            () -> new Netty4HttpServerTransport(
-                settings,
-                networkService,
-                bigArrays,
-                threadPool,
-                xContentRegistry,
-                dispatcher,
-                clusterSettings,
-                getSharedGroupFactory(settings),
-                tracer
-            )
+            () -> new Netty4HttpServerTransport(settings, networkService, threadPool, dispatcher, getSharedGroupFactory(settings), tracer)
         );
     }
 
@@ -169,11 +159,8 @@ public class Netty4ModulePlugin extends Plugin implements NetworkPlugin {
             () -> new SecureNetty4HttpServerTransport(
                 settings,
                 networkService,
-                bigArrays,
                 threadPool,
-                xContentRegistry,
                 dispatcher,
-                clusterSettings,
                 getSharedGroupFactory(settings),
                 secureHttpTransportSettingsProvider,
                 tracer

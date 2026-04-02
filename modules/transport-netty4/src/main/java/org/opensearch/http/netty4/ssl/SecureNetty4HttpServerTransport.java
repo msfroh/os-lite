@@ -31,10 +31,7 @@ package org.opensearch.http.netty4.ssl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.common.network.NetworkService;
-import org.opensearch.common.settings.ClusterSettings;
 import org.opensearch.common.settings.Settings;
-import org.opensearch.common.util.BigArrays;
-import org.opensearch.core.xcontent.NamedXContentRegistry;
 import org.opensearch.http.HttpChannel;
 import org.opensearch.http.HttpHandlingSettings;
 import org.opensearch.http.HttpServerTransport;
@@ -79,26 +76,13 @@ public class SecureNetty4HttpServerTransport extends Netty4HttpServerTransport {
     public SecureNetty4HttpServerTransport(
         final Settings settings,
         final NetworkService networkService,
-        final BigArrays bigArrays,
         final ThreadPool threadPool,
-        final NamedXContentRegistry namedXContentRegistry,
         final Dispatcher dispatcher,
-        final ClusterSettings clusterSettings,
         final SharedGroupFactory sharedGroupFactory,
         final SecureHttpTransportSettingsProvider secureHttpTransportSettingsProvider,
         final Tracer tracer
     ) {
-        super(
-            settings,
-            networkService,
-            bigArrays,
-            threadPool,
-            namedXContentRegistry,
-            dispatcher,
-            clusterSettings,
-            sharedGroupFactory,
-            tracer
-        );
+        super(settings, networkService, threadPool, dispatcher, sharedGroupFactory, tracer);
 
         this.secureHttpTransportSettingsProvider = secureHttpTransportSettingsProvider;
         this.exceptionHandler = secureHttpTransportSettingsProvider.buildHttpServerExceptionHandler(settings, this)

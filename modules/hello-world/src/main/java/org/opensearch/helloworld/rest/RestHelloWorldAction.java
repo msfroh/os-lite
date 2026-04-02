@@ -13,14 +13,14 @@ import org.opensearch.core.xcontent.XContentBuilder;
 import org.opensearch.helloworld.action.HelloWorldAction;
 import org.opensearch.helloworld.action.HelloWorldRequest;
 import org.opensearch.helloworld.action.HelloWorldResponse;
-import org.opensearch.rest.BaseRestHandler;
-import org.opensearch.rest.BytesRestResponse;
-import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.RestResponse;
-import org.opensearch.rest.action.RestBuilderListener;
+import org.opensearch.http.HttpRequest;
+import org.opensearch.rest.spi.BaseRestHandler;
+import org.opensearch.rest.spi.BytesRestResponse;
+import org.opensearch.rest.spi.RestBuilderListener;
+import org.opensearch.rest.spi.RestRequest;
+import org.opensearch.rest.spi.RestResponse;
 import org.opensearch.transport.client.node.NodeClient;
 
-import java.io.IOException;
 import java.util.List;
 
 public class RestHelloWorldAction extends BaseRestHandler {
@@ -30,7 +30,7 @@ public class RestHelloWorldAction extends BaseRestHandler {
     }
 
     @Override
-    protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
+    protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) {
         return channel -> client.execute(HelloWorldAction.INSTANCE, new HelloWorldRequest(), new RestBuilderListener<>(channel) {
             @Override
             public RestResponse buildResponse(HelloWorldResponse helloWorldResponse, XContentBuilder builder) throws Exception {
@@ -45,6 +45,6 @@ public class RestHelloWorldAction extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(new Route(RestRequest.Method.GET, "/"));
+        return List.of(new Route(HttpRequest.Method.GET, "/"));
     }
 }

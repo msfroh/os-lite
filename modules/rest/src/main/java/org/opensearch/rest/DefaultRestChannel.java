@@ -30,7 +30,7 @@
  * GitHub history for details.
  */
 
-package org.opensearch.http;
+package org.opensearch.rest;
 
 import org.opensearch.Build;
 import org.opensearch.common.Nullable;
@@ -45,10 +45,12 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.common.bytes.BytesArray;
 import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
-import org.opensearch.rest.AbstractRestChannel;
-import org.opensearch.rest.RestChannel;
-import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.RestResponse;
+import org.opensearch.http.CorsHandler;
+import org.opensearch.http.HttpChannel;
+import org.opensearch.http.HttpHandlingSettings;
+import org.opensearch.http.HttpRequest;
+import org.opensearch.http.HttpResponse;
+import org.opensearch.http.HttpUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +64,7 @@ import static org.opensearch.tasks.Task.X_OPAQUE_ID;
  *
  * @opensearch.internal
  */
-class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
+public class DefaultRestChannel extends AbstractRestChannel implements org.opensearch.rest.spi.RestChannel {
 
     static final String CLOSE = "close";
     static final String CONNECTION = "connection";
@@ -86,9 +88,9 @@ class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
     private final Map<String, List<String>> SERVER_VERSION_HEADER = Map.of(SERVER_VERSION, List.of(SERVER_VERSION_VALUE));
 
     @Nullable
-    private final HttpTracer tracerLog;
+    private final RestTracer tracerLog;
 
-    DefaultRestChannel(
+    public DefaultRestChannel(
         HttpChannel httpChannel,
         HttpRequest httpRequest,
         RestRequest request,
@@ -96,7 +98,7 @@ class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
         HttpHandlingSettings settings,
         ThreadContext threadContext,
         CorsHandler corsHandler,
-        @Nullable HttpTracer tracerLog
+        @Nullable RestTracer tracerLog
     ) {
         super(request, settings.getDetailedErrorsEnabled());
         this.httpChannel = httpChannel;
@@ -114,7 +116,7 @@ class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
     }
 
     @Override
-    public void sendResponse(RestResponse restResponse) {
+    public void sendResponse(org.opensearch.rest.spi.RestResponse restResponse) {
         // We're sending a response so we know we won't be needing the request content again and release it
         Releasables.closeWhileHandlingException(httpRequest::release);
 
@@ -134,7 +136,7 @@ class DefaultRestChannel extends AbstractRestChannel implements RestChannel {
 
             BytesReference finalContent = content;
             try {
-                if (request.method() == RestRequest.Method.HEAD) {
+                if (request.method() == HttpRequest.Method.HEAD) {
                     finalContent = BytesArray.EMPTY;
                 }
             } catch (IllegalArgumentException ignored) {

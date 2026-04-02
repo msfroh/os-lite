@@ -6,7 +6,7 @@
  * compatible open source license.
  */
 
-package org.opensearch.http;
+package org.opensearch.rest;
 
 import org.opensearch.common.Nullable;
 import org.opensearch.common.io.stream.BytesStreamOutput;
@@ -17,8 +17,11 @@ import org.opensearch.common.util.BigArrays;
 import org.opensearch.common.util.concurrent.ThreadContext;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.rest.RestStatus;
-import org.opensearch.rest.RestRequest;
-import org.opensearch.rest.StreamingRestChannel;
+import org.opensearch.http.CorsHandler;
+import org.opensearch.http.HttpChunk;
+import org.opensearch.http.HttpHandlingSettings;
+import org.opensearch.http.HttpRequest;
+import org.opensearch.http.StreamingHttpChannel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +38,12 @@ import static org.opensearch.tasks.Task.X_OPAQUE_ID;
  *
  * @opensearch.internal
  */
-class DefaultStreamingRestChannel extends DefaultRestChannel implements StreamingRestChannel {
+public class DefaultStreamingRestChannel extends DefaultRestChannel implements org.opensearch.rest.spi.StreamingRestChannel {
     private final StreamingHttpChannel streamingHttpChannel;
     @Nullable
-    private final HttpTracer tracerLog;
+    private final RestTracer tracerLog;
 
-    DefaultStreamingRestChannel(
+    public DefaultStreamingRestChannel(
         StreamingHttpChannel streamingHttpChannel,
         HttpRequest httpRequest,
         RestRequest request,
@@ -48,7 +51,7 @@ class DefaultStreamingRestChannel extends DefaultRestChannel implements Streamin
         HttpHandlingSettings settings,
         ThreadContext threadContext,
         CorsHandler corsHandler,
-        @Nullable HttpTracer tracerLog
+        @Nullable RestTracer tracerLog
     ) {
         super(streamingHttpChannel, httpRequest, request, bigArrays, settings, threadContext, corsHandler, tracerLog);
         this.streamingHttpChannel = streamingHttpChannel;
