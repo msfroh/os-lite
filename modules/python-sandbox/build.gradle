@@ -1,0 +1,40 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ */
+
+opensearchplugin {
+    description = 'Sandboxed Python scripting via GraalPy'
+    classname = 'org.opensearch.python.PythonSandboxPlugin'
+    extendedPlugins = ['rest']
+}
+
+repositories {
+    mavenLocal()
+    maven { url = "https://ci.opensearch.org/ci/dbc/snapshots/maven/" }
+    mavenCentral()
+}
+
+testingConventions.enabled = false
+
+// OpenSearchJavaPlugin forces transitive=false on api/implementation/compileOnly/runtimeOnly/testImplementation
+// for all non-org.opensearch deps. GraalPy needs transitive resolution to pull in truffle, regex, sdk, etc.
+// Workaround: declare deps on a custom configuration that runtimeOnly extends from.
+configurations {
+    graalpyRuntime
+    runtimeOnly.extendsFrom(graalpyRuntime)
+}
+
+dependencies {
+    compileOnly project(':modules:rest:spi')
+    api libs.graalvm.polyglot
+    graalpyRuntime libs.graalvm.python.language
+    graalpyRuntime libs.graalvm.python.resources
+    // truffle-runtime would be needed for the optimized JIT runtime, but it requires
+    // attaching a native library to the JVM (libtruffleattach). Stock OpenJDK + the
+    // OpenSearch agent's permission lockdown prevents that. Truffle falls back to
+    // the interpreter automatically — slower, but functional for a sandbox.
+}
