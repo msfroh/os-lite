@@ -39,6 +39,9 @@ jna               = "5.16.0"
 
 netty             = "4.2.11.Final"
 joda              = "2.12.7"
+
+# graalvm polyglot embedding (GraalPy)
+graalvm           = "24.2.0"
 roaringbitmap     = "1.3.0"
 
 # project reactor
@@ -113,6 +116,10 @@ bouncycastle-tls = { group = "org.bouncycastle", name = "bctls-fips", version.re
 bouncycastle-pkix = { group = "org.bouncycastle", name = "bcpkix-fips", version.ref = "bouncycastle_pkix"}
 bouncycastle-pg = { group = "org.bouncycastle", name = "bcpg-fips", version.ref = "bouncycastle_pg"}
 bouncycastle-util = { group = "org.bouncycastle", name = "bcutil-fips", version.ref = "bouncycastle_util"}
+graalvm-polyglot = { group = "org.graalvm.polyglot", name = "polyglot", version.ref = "graalvm" }
+graalvm-python-language = { group = "org.graalvm.python", name = "python-language", version.ref = "graalvm" }
+graalvm-python-resources = { group = "org.graalvm.python", name = "python-resources", version.ref = "graalvm" }
+graalvm-truffle-runtime = { group = "org.graalvm.truffle", name = "truffle-runtime", version.ref = "graalvm" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
 hdrhistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version.ref = "hdrhistogram" }
